@@ -1,5 +1,12 @@
 # MACC_project
 
+Days:
+
+- Wednesday: morning or afternoon/evening;
+- Thursday: morning or afternoon/evening;
+
+- Saturday or Sunday (depending on the time and need).
+
 RadarPhone
 
 - Radar game with two phones (one player searches and the other one hides it). Every x seconds or every minute the position of the hiddenphone is pinged to the radar UI of the main player and he has to try to reach it.
