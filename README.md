@@ -12,3 +12,6 @@ RadarPhone
 - time constraint of y minutes to win the game, and at least z minutes have to pass to win the game.
 - Check how we can implement "online" feature (so how the two people playing communicate with each other, if through a server or P2P)
 - balsamiq for mockups.
+  
+![](image.png)
+![](image1.png)
