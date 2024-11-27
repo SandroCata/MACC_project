@@ -21,4 +21,4 @@ RadarPhone
 - balsamiq for mockups.
   
 ![](./pics/example1.png)
-![](./pics/example1.pngg)
+![](./pics/example2.pngg)
