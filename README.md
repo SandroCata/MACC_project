@@ -20,5 +20,5 @@ RadarPhone
 - Check how we can implement "online" feature (so how the two people playing communicate with each other, if through a server or P2P)
 - balsamiq for mockups.
   
-![](image.png)
-![](image1.png)
+![](./pics/example1.png)
+![](./pics/example1.pngg)
