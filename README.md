@@ -22,3 +22,13 @@ RadarPhone
   
 ![](./pics/example1.png)
 ![](./pics/example2.png)
+
+## SCREENS
+- The screen we see at the beginning is a screen with a text "press anywhere to start"
+- Once we have pressed the screen, the menu to register opens, asking us for the user, email and password. To register, we must press the "register" button. If we are already registered, we can press the "are registered, press here" button, which will open the menu to enter our email and password to enter.
+- Once we have entered the game, we have to enter the password to be able to connect with the other player, once we have done so, it will let us choose between the two game modes. Then we are asked if we want to play as a seeker or as a holder. We also have some settings that allow us to change the theme and the rules of the game. (To make the connection between the two users, the user searching and the one who holds the mobile phone, send the same code to the server. If the server sees that it is the same code, it matches them and the game starts)
+- The customization screen allows us to change the username, we can also change the volume, and switch between different themes, we have the light theme and the dark theme.
+- If we click on the button to know the rules, a new screen will open with the text.
+- Once we have the connection made:
+  - If we are the seeker, we will see the search radar on the screen. Our position will appear in the center and we will have to find the player who is holding the phone. We will also see a counter that will tell us how much time we have left before the game ends. We have a camera button which we will use when we find the holder. And also, we have a button to leave the game.
+  - If we are the holder, we will see a text that tells us that the game has started and that the seeker is trying to find us, and also a counter with the remaining game time. And also, we have a button to leave the game.
