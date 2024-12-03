@@ -31,4 +31,4 @@ RadarPhone
 - If we click on the button to know the rules, a new screen will open with the text.
 - Once we have the connection made:
   - If we are the seeker, we will see the search radar on the screen. Our position will appear in the center and we will have to find the player who is holding the phone. We will also see a counter that will tell us how much time we have left before the game ends. We have a camera button which we will use when we find the holder. And also, we have a button to leave the game.
-  - If we are the holder, we will see a text that tells us that the game has started and that the seeker is trying to find us, and also a counter with the remaining game time. And also, we have a button to leave the game.
+  - If we are the hider, we will see a text that tells us that the game has started and that the seeker is trying to find us, and also a counter with the remaining game time. And also, we have a button to leave the game. A pop-up will appear when the seeker has won or lost the game.
