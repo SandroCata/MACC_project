@@ -49,21 +49,27 @@ fun RegLogScreen() {
         //Log.d("SecondScreen", "Change Size: $changeSize")
 
         val fontSize = if (changeSize) {
-            20.sp
+            14.sp
         } else {
             16.sp
         }
 
-        val buttonSize = if (changeSize) {
+        val buttonWidthSize = if (changeSize) {
             200.dp
         } else {
             300.dp
         }
 
-        val inputSize = if (changeSize) {
-            220.dp
+        val inputWidthSize = if (changeSize) {
+            200.dp
         } else {
-            320.dp
+            300.dp
+        }
+
+        val inputHeightSize = if (changeSize) {
+            60.dp
+        } else {
+            70.dp
         }
 
         val switchFormSize = if (changeSize) {
@@ -75,6 +81,12 @@ fun RegLogScreen() {
             5.dp
         } else {
             50.dp
+        }
+
+        val screenPadding = if (changeSize) {
+            16.dp
+        } else {
+            80.dp
         }
 
         //variables for the form
@@ -98,13 +110,13 @@ fun RegLogScreen() {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
+                .padding(screenPadding),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
 
             if (isRegistering) {
-                OutlinedTextField(modifier = Modifier.width(inputSize),
+                OutlinedTextField(modifier = Modifier.width(inputWidthSize).height(inputHeightSize),
                     value = username,
                     onValueChange = { username = it },
                     label = { Text("Username") },
@@ -116,7 +128,7 @@ fun RegLogScreen() {
                     )
                 )
             }
-            OutlinedTextField(modifier = Modifier.width(inputSize),
+            OutlinedTextField(modifier = Modifier.width(inputWidthSize).height(inputHeightSize),
                 value = email,
                 onValueChange = { email = it },
                 label = { Text("Email") },
@@ -127,7 +139,7 @@ fun RegLogScreen() {
                     containerColor = Color.White // Set text color to white
                 )
             )
-            OutlinedTextField(modifier = Modifier.width(inputSize),
+            OutlinedTextField(modifier = Modifier.width(inputWidthSize).height(inputHeightSize),
                 value = password,
                 onValueChange = { password = it },
                 label = { Text("Password") },
@@ -140,7 +152,7 @@ fun RegLogScreen() {
                 visualTransformation = PasswordVisualTransformation()
             )
             if (isRegistering) {
-                OutlinedTextField(modifier = Modifier.width(inputSize),
+                OutlinedTextField(modifier = Modifier.width(inputWidthSize).height(inputHeightSize),
                     value = confirmPassword,
                     onValueChange = { confirmPassword = it },
                     label = { Text("Confirm Password") },
@@ -154,27 +166,29 @@ fun RegLogScreen() {
                 )
             }
             Spacer(modifier = Modifier.height(spacing))
-            Button(modifier = Modifier.size(width = buttonSize, height = 38.dp),
+            Button(modifier = Modifier.size(width = buttonWidthSize, height = 38.dp),
                 onClick = { /* Handle registration/login */ },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color.Magenta,
                     contentColor = Color.White )
             ) {
-                Text(if (isRegistering) "Register" else "Login")
+                Text(text = if (isRegistering) "Sign up" else "Sign in",
+                    fontSize = fontSize)
             }
             Spacer(modifier = Modifier.height(spacing))
-            Button(modifier = Modifier.size(width = buttonSize, height = 38.dp),
+            Button(modifier = Modifier.size(width = buttonWidthSize, height = 38.dp),
                 onClick = { /* Handle Google OAuth */ },
                 colors = ButtonDefaults.buttonColors
                     (
                     containerColor = Color.Magenta,
                     contentColor = Color.White )
             ) {
-                Text(if (isRegistering) "Register with Google" else "Login with Google")
+                Text(text = if (isRegistering) "Google sign up" else "Google sign in",
+                    fontSize = fontSize)
             }
             Spacer(modifier = Modifier.height(spacing))
             Text(
-                text = if (isRegistering) "Already have an account? Login" else "Don't have an account? Register",
+                text = if (isRegistering) "Already signed up? Sign in" else "Not signed up? Sign up",
                 fontSize = fontSize,
                 modifier = Modifier
                     .clickable { isRegistering = !isRegistering }
