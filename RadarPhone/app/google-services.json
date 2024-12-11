@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "158575769697",
+    "project_id": "radarphone-a3e7d",
+    "storage_bucket": "radarphone-a3e7d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:158575769697:android:98eed105252fcef9ca9220",
+        "android_client_info": {
+          "package_name": "com.example.radarphone"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCwgCK7CA0-4M8WZuAQ3dql7lm09NMKlcw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

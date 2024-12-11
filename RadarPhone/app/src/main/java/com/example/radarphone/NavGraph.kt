@@ -8,13 +8,13 @@ import com.example.radarphone.ui.theme.FirstScreen
 import com.example.radarphone.ui.theme.RegLogScreen
 
 @Composable
-fun NavGraph() {
+fun NavGraph(regLogViewModel: RegLogViewModel) {
 
     //function to navigate from one screen to another
     val navController = rememberNavController()
 
     NavHost(navController = navController, startDestination = "first_screen") {
         composable("first_screen") { FirstScreen(navController) } // Pass navController
-        composable("RegLog_screen") { RegLogScreen() }
+        composable("RegLog_screen") { RegLogScreen(navController, regLogViewModel) }
     }
 }

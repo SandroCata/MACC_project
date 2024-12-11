@@ -2,6 +2,7 @@ package com.example.radarphone.ui.theme
 
 import android.content.res.Configuration
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -29,21 +30,26 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.example.radarphone.R
+import com.example.radarphone.RegLogViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RegLogScreen() {
+fun RegLogScreen(navController: NavController, regLogViewModel: RegLogViewModel) {
 
     //Used for OutlinedTextFields colors
     MaterialTheme { // Add MaterialTheme here
 
         //this part is useful for device orientation and size changes
         val configuration = LocalConfiguration.current
+
+        val context = LocalContext.current
 
         val changeSize = (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE)
         //Log.d("SecondScreen", "Change Size: $changeSize")
@@ -77,6 +83,7 @@ fun RegLogScreen() {
         } else {
             320.dp
         }
+
         val spacing = if (changeSize) {
             5.dp
         } else {
@@ -98,6 +105,9 @@ fun RegLogScreen() {
         //switch between registration and login
         var isRegistering by remember { mutableStateOf(true) } // Toggle between registration and login
 
+        var registered by remember { mutableStateOf(Pair(false, "")) }
+        var logged by remember { mutableStateOf(Pair(false, "")) }
+
         //background image
         Image(
             painter = painterResource(id = R.drawable.mainscreen),
@@ -116,7 +126,9 @@ fun RegLogScreen() {
         ) {
 
             if (isRegistering) {
-                OutlinedTextField(modifier = Modifier.width(inputWidthSize).height(inputHeightSize),
+                OutlinedTextField(modifier = Modifier
+                    .width(inputWidthSize)
+                    .height(inputHeightSize),
                     value = username,
                     onValueChange = { username = it },
                     label = { Text("Username") },
@@ -128,7 +140,9 @@ fun RegLogScreen() {
                     )
                 )
             }
-            OutlinedTextField(modifier = Modifier.width(inputWidthSize).height(inputHeightSize),
+            OutlinedTextField(modifier = Modifier
+                .width(inputWidthSize)
+                .height(inputHeightSize),
                 value = email,
                 onValueChange = { email = it },
                 label = { Text("Email") },
@@ -139,7 +153,9 @@ fun RegLogScreen() {
                     containerColor = Color.White // Set text color to white
                 )
             )
-            OutlinedTextField(modifier = Modifier.width(inputWidthSize).height(inputHeightSize),
+            OutlinedTextField(modifier = Modifier
+                .width(inputWidthSize)
+                .height(inputHeightSize),
                 value = password,
                 onValueChange = { password = it },
                 label = { Text("Password") },
@@ -152,7 +168,9 @@ fun RegLogScreen() {
                 visualTransformation = PasswordVisualTransformation()
             )
             if (isRegistering) {
-                OutlinedTextField(modifier = Modifier.width(inputWidthSize).height(inputHeightSize),
+                OutlinedTextField(modifier = Modifier
+                    .width(inputWidthSize)
+                    .height(inputHeightSize),
                     value = confirmPassword,
                     onValueChange = { confirmPassword = it },
                     label = { Text("Confirm Password") },
@@ -167,7 +185,34 @@ fun RegLogScreen() {
             }
             Spacer(modifier = Modifier.height(spacing))
             Button(modifier = Modifier.size(width = buttonWidthSize, height = 38.dp),
-                onClick = { /* Handle registration/login */ },
+                onClick = { /* Handle registration/login */
+                    if (isRegistering) {
+                        registered = regLogViewModel.signup(email, password, username, confirmPassword)
+                        Log.d("registered", "$registered")
+                        if (registered.first) {
+                            // Display pop-up or message for successful registration
+                            Toast.makeText(context, registered.second, Toast.LENGTH_SHORT).show()
+                            // Switch to login form
+                            isRegistering = false
+                        } else {
+                            // Display error message
+                            Toast.makeText(context, registered.second, Toast.LENGTH_SHORT).show()
+
+                        }
+                    }
+                    else {
+                        logged=regLogViewModel.login(email,password)
+                        Log.d("logged", "$logged")
+                        if (logged.first) {
+                            // Navigate to the next screen
+                            Toast.makeText(context, logged.second, Toast.LENGTH_SHORT).show()
+                            //navController.navigate("nextScreen")
+                        } else {
+                            // Display error message
+                            Toast.makeText(context, logged.second, Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                          },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color.Magenta,
                     contentColor = Color.White )
