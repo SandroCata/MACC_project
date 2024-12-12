@@ -78,12 +78,6 @@ fun RegLogScreen(navController: NavController, regLogViewModel: RegLogViewModel)
             70.dp
         }
 
-        val switchFormSize = if (changeSize) {
-            220.dp
-        } else {
-            320.dp
-        }
-
         val spacing = if (changeSize) {
             5.dp
         } else {
@@ -197,7 +191,6 @@ fun RegLogScreen(navController: NavController, regLogViewModel: RegLogViewModel)
                         } else {
                             // Display error message
                             Toast.makeText(context, registered.second, Toast.LENGTH_SHORT).show()
-
                         }
                     }
                     else {
@@ -206,7 +199,7 @@ fun RegLogScreen(navController: NavController, regLogViewModel: RegLogViewModel)
                         if (logged.first) {
                             // Navigate to the next screen
                             Toast.makeText(context, logged.second, Toast.LENGTH_SHORT).show()
-                            //navController.navigate("nextScreen")
+                            navController.navigate("Home_screen")
                         } else {
                             // Display error message
                             Toast.makeText(context, logged.second, Toast.LENGTH_SHORT).show()

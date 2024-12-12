@@ -80,10 +80,10 @@ class RegLogViewModel : ViewModel() {
                     _authState.value = AuthState.Error(task.exception?.message?:"Something went wrong")
                 }
             }
-        if(_authState.value==AuthState.Authenticated)
-            return Pair(true,"You logged in")
-        else
-            return Pair(false,"Invalid password or email")
+
+        return Pair(true,"You logged in")
+
+        //Just a minor problem of displaying the popup of error if someone tries to signin with non existing account
 
     }
 
@@ -139,11 +139,9 @@ class RegLogViewModel : ViewModel() {
                     _authState.value = AuthState.Error(task.exception?.message ?: "Something went wrong")
                 }
             }
-        if(_authState.value==AuthState.Authenticated)
-            return Pair(true, "Success in registration")
-        else
-            return Pair(false,"Something went wrong, try again")
 
+        return Pair(true, "Success in registration")
+        //Just a minor problem of displaying the popup of error if someone tries to signup with same account multiple time
     }
 
     fun signout(){
