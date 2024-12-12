@@ -13,6 +13,18 @@ class RegLogViewModel : ViewModel() {
 
     val emailPattern = "[a-zA-Z0-9._-]+@[a-z]+\\.+[a-z]+"
 
+    fun isValidUsernameAndPassword(username: String, password: String): Boolean {
+        val blackListCharsUsername = listOf('\'', '"', ' ', ',', ';', '(', ')', '[', ']', '{', '}', '<', '>', ':', '?', '!', '$', '&', '*', '#', '^', '/', '|', '-', '+', '~', '.')
+        val blackListCharsPassword = listOf('\'', '"', ' ', ',')
+
+        return username.none { it in blackListCharsUsername } && password.none { it in blackListCharsPassword }
+    }
+    fun isValidPassword(password: String): Boolean {
+        val blackListCharsPassword = listOf('\'', '"', ' ', ',')
+
+        return password.none { it in blackListCharsPassword }
+    }
+
     //Firebase authentication
     private val auth : FirebaseAuth = FirebaseAuth.getInstance()
 
@@ -36,29 +48,43 @@ class RegLogViewModel : ViewModel() {
     fun login(email : String,password : String): Pair<Boolean, String>{
 
         if(email.isEmpty() || password.isEmpty()){
+            Log.d("SignIn", "Error fields empty")
             _authState.value = AuthState.Error("Email or password can't be empty")
             return Pair(false, "Email or password can't be empty")
         }
-        var failure=false
-        var success=true
-        var msgErr="Something went wrong, try again"
-        var msgSucc="You logged in"
+        if (password.length < 6) {
+            Log.d("SignIn", "Error passw not long enough")
+            _authState.value = AuthState.Error("Passw not long enough")
+            return Pair(false, "Password needs at least 6 characters")
+        }
+        if (!email.matches(emailPattern.toRegex())) {
+            Log.d("SignIn", "Error email not valid")
+            _authState.value = AuthState.Error("Email not valid")
+            return Pair(false, "Email format not valid")
+        }
+        //Check for sql injection with blacklist
+        if (!isValidPassword(password)) {
+            Log.d("SignIn", "Error chars not valid")
+            _authState.value = AuthState.Error("Chars not valid")
+            return Pair(false, "Cannot use special characters in password")
+        }
 
-        //check why login does not work
-
-        var myPair: Pair<Boolean, String>  = Pair(failure,msgErr)
         _authState.value = AuthState.Loading
         auth.signInWithEmailAndPassword(email,password)
             .addOnCompleteListener{task->
                 if (task.isSuccessful){
+                    Log.d("SignIn", "Login task OK")
                     _authState.value = AuthState.Authenticated
-                    myPair=Pair(success,msgSucc)
                 }else{
+                    Log.d("SignIn", "Login task KO")
                     _authState.value = AuthState.Error(task.exception?.message?:"Something went wrong")
-                    myPair=Pair(failure,msgErr)
                 }
             }
-        return myPair
+        if(_authState.value==AuthState.Authenticated)
+            return Pair(true,"You logged in")
+        else
+            return Pair(false,"Invalid password or email")
+
     }
 
     fun signup(email: String, password: String, username: String, confirmPassword: String): Pair<Boolean, String> {
@@ -83,6 +109,11 @@ class RegLogViewModel : ViewModel() {
             return Pair(false, "Email format not valid")
         }
         //Check for sql injection with blacklist
+        if (!isValidUsernameAndPassword(username, password)) {
+            Log.d("SignUp", "Error chars not valid")
+            _authState.value = AuthState.Error("Chars not valid")
+            return Pair(false, "Cannot use special characters in username or password")
+        }
 
         Log.d("SignUp", "Starting signup process")
         _authState.value = AuthState.Loading
@@ -108,7 +139,11 @@ class RegLogViewModel : ViewModel() {
                     _authState.value = AuthState.Error(task.exception?.message ?: "Something went wrong")
                 }
             }
-        return Pair(true, "Success in registration")
+        if(_authState.value==AuthState.Authenticated)
+            return Pair(true, "Success in registration")
+        else
+            return Pair(false,"Something went wrong, try again")
+
     }
 
     fun signout(){
