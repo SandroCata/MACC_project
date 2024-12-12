@@ -125,7 +125,10 @@ class RegLogViewModel : ViewModel() {
                     val userId = auth.currentUser?.uid
                     val database = com.google.firebase.database.FirebaseDatabase.getInstance().reference
 
-                    val user = User(userId!!, username, email, password) // Create a User data class
+                    // Default black profile picture URL (replace with your actual URL)
+                    val defaultProfilePictureUrl = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTogPfhbLOk_neriTUlJLrzYaVQG1DszGsBLQ&s"
+
+                    val user = User(userId!!, username, email, password, defaultProfilePictureUrl) // Create a User data class
 
                     database.child("users").child(userId).setValue(user)
                         .addOnSuccessListener {
@@ -148,7 +151,6 @@ class RegLogViewModel : ViewModel() {
         auth.signOut()
         _authState.value = AuthState.Unauthenticated
     }
-
 
 }
 
