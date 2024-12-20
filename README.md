@@ -9,16 +9,15 @@ Days:
 
 RadarPhone
 
-- Radar game with two phones (one player searches and the other one hides it). Every x seconds or every minute the position of the hiddenphone is pinged to the radar UI of the main player and he has to try to reach it.
-- Once the player reaches the hidden phone he has to take a photo to complete the game.
-- Possibility to customize UI colors, nicknames, light and dark mode, etc.
-- Take inspiration from standard or more advancved radar images on internet.
-- Ai -> algorithm in pythonanywhere that has to recognize and validate the photo of the smartphone found at the end of the game
-- Check if he is close and if it is and sends the photo from his cell phone, so we end the game.
-- Sql database.
-- time constraint of y minutes to win the game, and at least z minutes have to pass to win the game.
-- Check how we can implement "online" feature (so how the two people playing communicate with each other, if through a server or P2P)
-- balsamiq for mockups.
+- Single-player radar game. The game consists of finding the place that appears on the radar (location position) (we can choose the location we want, be it a restaurant, supermarket, etc.). The player must move to geographically find the place, which will be shown on the screen with a radar.
+- Once the player reaches the place, he wins the game (we will check this with the distance between the location of the mobile and the place to find).
+- Possibility of customizing the colors of the user interface, nicknames, light and dark mode, as well as the profile picture.
+- We will use the camera to take the profile picture.
+- Get inspired by standard or more advanced radar images from the Internet.
+- SQL database.
+- Time restriction of y minutes to win the game, and at least z minutes must pass to win the game.
+- To make the connection, the position of the place will be sent to the player so that he can locate it with the radar. As well as the player will send his position to know if he is approaching the place and complete the game.
+- balsamiq for models.
   
 ![](./pics/example1.png)
 ![](./pics/example2.png)
