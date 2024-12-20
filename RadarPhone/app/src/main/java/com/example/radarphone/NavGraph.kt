@@ -4,9 +4,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.compose.runtime.Composable
-import com.example.radarphone.ui.theme.FirstScreen
-import com.example.radarphone.ui.theme.HomeScreen
-import com.example.radarphone.ui.theme.RegLogScreen
+import com.example.radarphone.screens.FirstScreen
+import com.example.radarphone.screens.HomeScreen
+import com.example.radarphone.screens.RegLogScreen
+import com.example.radarphone.viewModels.RegLogViewModel
 
 @Composable
 fun NavGraph(regLogViewModel: RegLogViewModel) {

@@ -1,13 +1,16 @@
-package com.example.radarphone
+package com.example.radarphone.viewModels
 
 import android.util.Log
-import android.widget.Toast
-import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.radarphone.R
 import com.google.firebase.auth.FirebaseAuth
-import com.example.radarphone.ui.theme.User
+import com.example.radarphone.dataStructures.User
+import com.google.firebase.database.FirebaseDatabase
+import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.launch
 
 class RegLogViewModel : ViewModel() {
 
@@ -45,7 +48,7 @@ class RegLogViewModel : ViewModel() {
         }
     }
 
-    fun login(email : String,password : String): Pair<Boolean, String>{
+    suspend fun login(email : String,password : String): Pair<Boolean, String>{
 
         if(email.isEmpty() || password.isEmpty()){
             Log.d("SignIn", "Error fields empty")
@@ -70,24 +73,19 @@ class RegLogViewModel : ViewModel() {
         }
 
         _authState.value = AuthState.Loading
-        auth.signInWithEmailAndPassword(email,password)
-            .addOnCompleteListener{task->
-                if (task.isSuccessful){
-                    Log.d("SignIn", "Login task OK")
-                    _authState.value = AuthState.Authenticated
-                }else{
-                    Log.d("SignIn", "Login task KO")
-                    _authState.value = AuthState.Error(task.exception?.message?:"Something went wrong")
-                }
-            }
 
-        return Pair(true,"You logged in")
+        try {
+            val authResult = auth.signInWithEmailAndPassword(email,password).await()
 
-        //Just a minor problem of displaying the popup of error if someone tries to signin with non existing account
-
+            _authState.value = AuthState.Authenticated
+            return Pair(true, "SignUp successful")
+        } catch (e: Exception) {
+            _authState.value = AuthState.Error(e.message ?: "Something went wrong")
+            return Pair(false, e.message ?: "Something went wrong")
+        }
     }
 
-    fun signup(email: String, password: String, username: String, confirmPassword: String): Pair<Boolean, String> {
+    suspend fun signup(email: String, password: String, username: String, confirmPassword: String): Pair<Boolean, String> {
         if (email.isEmpty() || password.isEmpty() || username.isEmpty() || confirmPassword.isEmpty()) {
             Log.d("SignUp", "Error fields empty")
             _authState.value = AuthState.Error("Fields cannot be empty")
@@ -117,34 +115,21 @@ class RegLogViewModel : ViewModel() {
 
         Log.d("SignUp", "Starting signup process")
         _authState.value = AuthState.Loading
-        auth.createUserWithEmailAndPassword(email, password)
-            .addOnCompleteListener { task ->
-                Log.d("SignUp", "Task signup process")
-                if (task.isSuccessful) {
-                    Log.d("SignUp", "Task signup successful")
-                    val userId = auth.currentUser?.uid
-                    val database = com.google.firebase.database.FirebaseDatabase.getInstance().reference
 
-                    // Default black profile picture URL (replace with your actual URL)
-                    val defaultProfilePictureUrl = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTogPfhbLOk_neriTUlJLrzYaVQG1DszGsBLQ&s"
+       try {
+            val authResult = auth.createUserWithEmailAndPassword(email, password).await()
+            val userId = authResult.user?.uid
+            val database = FirebaseDatabase.getInstance().reference
+            val defaultProfilePictureUrl = R.drawable.profilepic
 
-                    val user = User(userId!!, username, email, password, defaultProfilePictureUrl) // Create a User data class
-
-                    database.child("users").child(userId).setValue(user)
-                        .addOnSuccessListener {
-                            _authState.value = AuthState.Authenticated
-                        }
-                        .addOnFailureListener {
-                            _authState.value = AuthState.Error(it.message ?: "Something went wrong")
-                        }
-                } else {
-                    Log.d("SignUp", "Task signup failure")
-                    _authState.value = AuthState.Error(task.exception?.message ?: "Something went wrong")
-                }
-            }
-
-        return Pair(true, "Success in registration")
-        //Just a minor problem of displaying the popup of error if someone tries to signup with same account multiple time
+            val user = User(userId!!, username, email, password, defaultProfilePictureUrl) // Create a User data class
+            database.child("users").child(userId).setValue(user).await()
+            _authState.value = AuthState.Authenticated
+            return Pair(true, "SignUp successful")
+        } catch (e: Exception) {
+            _authState.value = AuthState.Error(e.message ?: "Something went wrong")
+            return Pair(false, e.message ?: "Something went wrong")
+        }
     }
 
     fun signout(){

@@ -1,4 +1,4 @@
-package com.example.radarphone.ui.theme
+package com.example.radarphone.screens
 
 import android.content.res.Configuration
 import android.util.Log
@@ -24,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,9 +36,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import com.example.radarphone.R
-import com.example.radarphone.RegLogViewModel
+import com.example.radarphone.viewModels.RegLogViewModel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -101,6 +104,9 @@ fun RegLogScreen(navController: NavController, regLogViewModel: RegLogViewModel)
 
         var registered by remember { mutableStateOf(Pair(false, "")) }
         var logged by remember { mutableStateOf(Pair(false, "")) }
+
+        // Remember a CoroutineScope
+        val coroutineScope = rememberCoroutineScope()
 
         //background image
         Image(
@@ -180,29 +186,33 @@ fun RegLogScreen(navController: NavController, regLogViewModel: RegLogViewModel)
             Spacer(modifier = Modifier.height(spacing))
             Button(modifier = Modifier.size(width = buttonWidthSize, height = 38.dp),
                 onClick = { /* Handle registration/login */
-                    if (isRegistering) {
-                        registered = regLogViewModel.signup(email, password, username, confirmPassword)
-                        Log.d("registered", "$registered")
-                        if (registered.first) {
-                            // Display pop-up or message for successful registration
-                            Toast.makeText(context, registered.second, Toast.LENGTH_SHORT).show()
-                            // Switch to login form
-                            isRegistering = false
+                    coroutineScope.launch {
+                        if (isRegistering) {
+                            registered =
+                                regLogViewModel.signup(email, password, username, confirmPassword)
+                            Log.d("registered", "$registered")
+                            if (registered.first) {
+                                // Display pop-up or message for successful registration
+                                Toast.makeText(context, registered.second, Toast.LENGTH_SHORT)
+                                    .show()
+                                // Switch to login form
+                                isRegistering = false
+                            } else {
+                                // Display error message
+                                Toast.makeText(context, registered.second, Toast.LENGTH_SHORT)
+                                    .show()
+                            }
                         } else {
-                            // Display error message
-                            Toast.makeText(context, registered.second, Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                    else {
-                        logged=regLogViewModel.login(email,password)
-                        Log.d("logged", "$logged")
-                        if (logged.first) {
-                            // Navigate to the next screen
-                            Toast.makeText(context, logged.second, Toast.LENGTH_SHORT).show()
-                            navController.navigate("Home_screen")
-                        } else {
-                            // Display error message
-                            Toast.makeText(context, logged.second, Toast.LENGTH_SHORT).show()
+                            logged = regLogViewModel.login(email, password)
+                            Log.d("logged", "$logged")
+                            if (logged.first) {
+                                // Navigate to the next screen
+                                Toast.makeText(context, logged.second, Toast.LENGTH_SHORT).show()
+                                navController.navigate("Home_screen")
+                            } else {
+                                // Display error message
+                                Toast.makeText(context, logged.second, Toast.LENGTH_SHORT).show()
+                            }
                         }
                     }
                           },

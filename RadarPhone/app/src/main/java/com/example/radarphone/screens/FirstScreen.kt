@@ -1,4 +1,4 @@
-package com.example.radarphone.ui.theme
+package com.example.radarphone.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -19,7 +19,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.radarphone.R
-import com.example.radarphone.RegLogViewModel
 
 @Composable
 fun FirstScreen(navController: NavController) {
