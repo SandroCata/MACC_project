@@ -1,13 +1,14 @@
 package com.example.radarphone.viewModels
 
 import android.util.Log
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.radarphone.R
 import com.google.firebase.auth.FirebaseAuth
-import com.example.radarphone.dataStructures.User
+import com.example.radarphone.dataStructures.Player
 import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.launch
@@ -39,7 +40,7 @@ class RegLogViewModel : ViewModel() {
     init {
         checkAuthStatus()
     }
-
+    
     fun checkAuthStatus(){
         if(auth.currentUser==null){
             _authState.value = AuthState.Unauthenticated
@@ -120,9 +121,8 @@ class RegLogViewModel : ViewModel() {
             val authResult = auth.createUserWithEmailAndPassword(email, password).await()
             val userId = authResult.user?.uid
             val database = FirebaseDatabase.getInstance().reference
-            val defaultProfilePictureUrl = R.drawable.profilepic
 
-            val user = User(userId!!, username, email, password, defaultProfilePictureUrl) // Create a User data class
+            val user = Player(userId!!, username, email, password) // Create a User data class
             database.child("users").child(userId).setValue(user).await()
             _authState.value = AuthState.Authenticated
             return Pair(true, "SignUp successful")

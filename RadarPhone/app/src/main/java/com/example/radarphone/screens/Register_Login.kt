@@ -1,8 +1,12 @@
 package com.example.radarphone.screens
 
+import android.app.Activity
 import android.content.res.Configuration
 import android.util.Log
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.launch
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -40,7 +44,14 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import com.example.radarphone.R
 import com.example.radarphone.viewModels.RegLogViewModel
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
+import com.google.firebase.Firebase
+import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.auth.auth
 import kotlinx.coroutines.launch
+import com.example.radarphone.dataStructures.Player
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,6 +64,12 @@ fun RegLogScreen(navController: NavController, regLogViewModel: RegLogViewModel)
         val configuration = LocalConfiguration.current
 
         val context = LocalContext.current
+
+        val auth = Firebase.auth
+
+        // Google Sign-In client
+        val googleSignInClient = GoogleSignIn.getClient(context, GoogleSignInOptions.DEFAULT_SIGN_IN)
+
 
         val changeSize = (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE)
         //Log.d("SecondScreen", "Change Size: $changeSize")
@@ -107,6 +124,41 @@ fun RegLogScreen(navController: NavController, regLogViewModel: RegLogViewModel)
 
         // Remember a CoroutineScope
         val coroutineScope = rememberCoroutineScope()
+
+        //var googleProfilePictureUrl by remember { mutableStateOf<String?>(null) }
+
+        val launcher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.StartActivityForResult()
+        ) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+                try {
+                    val account = task.getResult(ApiException::class.java)!!
+                    Log.d("RegLogScreen", "firebaseAuthWithGoogle:" + account.id)
+                    val credential = GoogleAuthProvider.getCredential(account.idToken, null)
+                    auth.signInWithCredential(credential)
+                        .addOnCompleteListener { task ->
+                            if (task.isSuccessful) {
+                                // Sign in succeeded, create Player object
+                                val user = auth.currentUser
+
+                                //googleProfilePictureUrl = user?.photoUrl?.toString()
+                                val player = Player(
+                                    uid = user?.uid ?: "",
+                                    username = user?.displayName ?: "",
+                                    email = user?.email ?: ""
+                                )
+                                // ... (Store the player object in your data store) ...
+                                navController.navigate("Home_screen")
+                            } else {
+                                // ... (Handle sign-in failure) ...
+                            }
+                        }
+                } catch (e: ApiException) {
+                    // ... (Handle Google Sign-In failure) ...
+                }
+            }
+        }
 
         //background image
         Image(
@@ -225,7 +277,12 @@ fun RegLogScreen(navController: NavController, regLogViewModel: RegLogViewModel)
             }
             Spacer(modifier = Modifier.height(spacing))
             Button(modifier = Modifier.size(width = buttonWidthSize, height = 38.dp),
-                onClick = { /* Handle Google OAuth */ },
+                onClick = { /* Handle Google OAuth */
+                    coroutineScope.launch {
+                        val signInIntent = googleSignInClient.signInIntent
+                        launcher.launch(signInIntent)
+                    }
+                          },
                 colors = ButtonDefaults.buttonColors
                     (
                     containerColor = Color.Magenta,
@@ -245,4 +302,5 @@ fun RegLogScreen(navController: NavController, regLogViewModel: RegLogViewModel)
             )
         }
     }
+
 }
