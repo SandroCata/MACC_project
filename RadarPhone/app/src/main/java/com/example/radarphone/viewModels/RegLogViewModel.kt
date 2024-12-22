@@ -10,8 +10,10 @@ import com.example.radarphone.R
 import com.google.firebase.auth.FirebaseAuth
 import com.example.radarphone.dataStructures.Player
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.launch
+import kotlin.io.path.exists
 
 class RegLogViewModel : ViewModel() {
 
@@ -79,7 +81,7 @@ class RegLogViewModel : ViewModel() {
             val authResult = auth.signInWithEmailAndPassword(email,password).await()
 
             _authState.value = AuthState.Authenticated
-            return Pair(true, "SignUp successful")
+            return Pair(true, "SignIn successful")
         } catch (e: Exception) {
             _authState.value = AuthState.Error(e.message ?: "Something went wrong")
             return Pair(false, e.message ?: "Something went wrong")
@@ -122,7 +124,7 @@ class RegLogViewModel : ViewModel() {
             val userId = authResult.user?.uid
             val database = FirebaseDatabase.getInstance().reference
 
-            val user = Player(userId!!, username, email, password) // Create a User data class
+            val user = Player(userId!!, username, email, password)
             database.child("users").child(userId).setValue(user).await()
             _authState.value = AuthState.Authenticated
             return Pair(true, "SignUp successful")
@@ -132,9 +134,46 @@ class RegLogViewModel : ViewModel() {
         }
     }
 
-    fun signout(){
-        auth.signOut()
-        _authState.value = AuthState.Unauthenticated
+    suspend fun signout(): Pair<Boolean, String>{
+        try {
+            auth.signOut()
+            _authState.value = AuthState.Unauthenticated
+            return Pair(true, "SignOut successful")
+        } catch (e: Exception) {
+            _authState.value = AuthState.Error(e.message ?: "Something went wrong")
+            return Pair(false, e.message ?: "Something went wrong")
+        }
+
+
+    }
+
+    fun checkUserExists(uid: String, callback: (Boolean) -> Unit) {
+        // Check if a user with the given UID exists in your database
+        // For example, using Firebase Firestore:
+        FirebaseFirestore.getInstance().collection("players")
+            .document(uid)
+            .get()
+            .addOnSuccessListener { document ->
+                callback(document.exists())
+            }
+            .addOnFailureListener { e ->
+                // Handle error
+                callback(false) // Assume user doesn't exist in case of error
+            }
+    }
+
+    fun createPlayer(player: Player) {
+        // Create a new player document in your database
+        // For example, using Firebase Firestore:
+        FirebaseFirestore.getInstance().collection("players")
+            .document(player.uid)
+            .set(player)
+            .addOnSuccessListener {
+                // Player created successfully
+            }
+            .addOnFailureListener { e ->
+                // Handle error
+            }
     }
 
 }

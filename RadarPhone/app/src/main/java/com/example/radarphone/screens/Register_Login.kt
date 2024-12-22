@@ -68,7 +68,13 @@ fun RegLogScreen(navController: NavController, regLogViewModel: RegLogViewModel)
         val auth = Firebase.auth
 
         // Google Sign-In client
-        val googleSignInClient = GoogleSignIn.getClient(context, GoogleSignInOptions.DEFAULT_SIGN_IN)
+        val googleSignInClient = GoogleSignIn.getClient(
+            context,
+            GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestIdToken(context.getString(R.string.default_web_client_id)) // Request ID token
+                .requestEmail()
+                .build()
+        )
 
 
         val changeSize = (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE)
@@ -134,28 +140,43 @@ fun RegLogScreen(navController: NavController, regLogViewModel: RegLogViewModel)
                 val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
                 try {
                     val account = task.getResult(ApiException::class.java)!!
-                    Log.d("RegLogScreen", "firebaseAuthWithGoogle:" + account.id)
                     val credential = GoogleAuthProvider.getCredential(account.idToken, null)
                     auth.signInWithCredential(credential)
                         .addOnCompleteListener { task ->
                             if (task.isSuccessful) {
-                                // Sign in succeeded, create Player object
                                 val user = auth.currentUser
-
-                                //googleProfilePictureUrl = user?.photoUrl?.toString()
                                 val player = Player(
                                     uid = user?.uid ?: "",
                                     username = user?.displayName ?: "",
                                     email = user?.email ?: ""
                                 )
-                                // ... (Store the player object in your data store) ...
-                                navController.navigate("Home_screen")
+
+                                // Check if the user is new or existing
+                                regLogViewModel.checkUserExists(player.uid) { exists ->
+                                    if (!exists) {
+                                        // New user, create account
+                                        regLogViewModel.createPlayer(player)
+                                        Log.d("RegLogScreen", "New user created")
+                                    } else {
+                                        // Existing user, log in
+                                        Log.d("RegLogScreen", "Existing user logged in")
+                                    }
+
+                                    // Navigate to home screen
+                                    navController.navigate("Home_screen")
+                                    Log.d("RegLogScreen", "signInWithCredential:success")
+                                    Toast.makeText(context, "Google sign-in success", Toast.LENGTH_SHORT).show()
+                                }
                             } else {
-                                // ... (Handle sign-in failure) ...
+                                // Handle sign-in failure
+                                Log.w("RegLogScreen", "signInWithCredential:failure", task.exception)
+                                Toast.makeText(context, "Google sign-in failed", Toast.LENGTH_SHORT).show()
                             }
                         }
                 } catch (e: ApiException) {
-                    // ... (Handle Google Sign-In failure) ...
+                    // Handle Google Sign-In failure
+                    Log.w("RegLogScreen", "Google sign in failed", e)
+                    Toast.makeText(context, "Google sign-in failed", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -240,8 +261,7 @@ fun RegLogScreen(navController: NavController, regLogViewModel: RegLogViewModel)
                 onClick = { /* Handle registration/login */
                     coroutineScope.launch {
                         if (isRegistering) {
-                            registered =
-                                regLogViewModel.signup(email, password, username, confirmPassword)
+                            registered = regLogViewModel.signup(email, password, username, confirmPassword)
                             Log.d("registered", "$registered")
                             if (registered.first) {
                                 // Display pop-up or message for successful registration
