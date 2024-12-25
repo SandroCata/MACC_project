@@ -172,7 +172,9 @@ fun HomeScreen(navController: NavController, regLogViewModel: RegLogViewModel) {
         Spacer(modifier = Modifier.height(spacing))
         // About the game button
         Button(
-            onClick = { /* Navigate to About screen */ },
+            onClick = { /* Navigate to About screen */
+                navController.navigate("About_screen")
+            },
             modifier = Modifier
                 .wrapContentSize()
                 .widthIn(max = buttonWidthSize),
