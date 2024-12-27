@@ -1,19 +1,13 @@
 package com.example.radarphone.viewModels
 
 import android.util.Log
-import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.example.radarphone.R
 import com.google.firebase.auth.FirebaseAuth
-import com.example.radarphone.dataStructures.Player
+import com.example.radarphone.dataStructures.User
 import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
-import kotlinx.coroutines.launch
-import kotlin.io.path.exists
 
 class RegLogViewModel : ViewModel() {
 
@@ -124,7 +118,7 @@ class RegLogViewModel : ViewModel() {
             val userId = authResult.user?.uid
             val database = FirebaseDatabase.getInstance().reference
 
-            val user = Player(userId!!, username, email, password)
+            val user = User(userId!!, username, email, password)
             database.child("users").child(userId).setValue(user).await()
             _authState.value = AuthState.Authenticated
             return Pair(true, "SignUp successful")
@@ -150,8 +144,9 @@ class RegLogViewModel : ViewModel() {
     fun checkUserExists(uid: String, callback: (Boolean) -> Unit) {
         // Check if a user with the given UID exists in your database
         // For example, using Firebase Firestore:
-        FirebaseFirestore.getInstance().collection("players")
-            .document(uid)
+        val database = FirebaseDatabase.getInstance().reference
+        database.child("users")
+            .child(uid)
             .get()
             .addOnSuccessListener { document ->
                 callback(document.exists())
@@ -162,12 +157,13 @@ class RegLogViewModel : ViewModel() {
             }
     }
 
-    fun createPlayer(player: Player) {
+    fun createUser(user: User) {
         // Create a new player document in your database
         // For example, using Firebase Firestore:
-        FirebaseFirestore.getInstance().collection("players")
-            .document(player.uid)
-            .set(player)
+        val database = FirebaseDatabase.getInstance().reference
+        database.child("users")
+            .child(user.uid)
+            .setValue(user)
             .addOnSuccessListener {
                 // Player created successfully
             }

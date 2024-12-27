@@ -19,7 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -67,9 +67,9 @@ fun SettingsScreen(navController: NavController, audioViewModel: AudioViewModel)
         80.dp
     }
 
-    var isMuted by remember { mutableStateOf(false) }
+    var isMuted by rememberSaveable { mutableStateOf(false) }
 
-    var sliderPosition by remember { mutableFloatStateOf(1f) } // Initial volume
+    var sliderPosition by rememberSaveable { mutableFloatStateOf(1f) } // Initial volume
 
     //background image
     Image(

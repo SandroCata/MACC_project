@@ -6,7 +6,6 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.activity.result.launch
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -29,6 +28,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,7 +40,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import com.example.radarphone.R
 import com.example.radarphone.viewModels.RegLogViewModel
@@ -51,7 +50,7 @@ import com.google.firebase.Firebase
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.auth
 import kotlinx.coroutines.launch
-import com.example.radarphone.dataStructures.Player
+import com.example.radarphone.dataStructures.User
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -117,13 +116,13 @@ fun RegLogScreen(navController: NavController, regLogViewModel: RegLogViewModel)
         }
 
         //variables for the form
-        var username by remember { mutableStateOf("") }
-        var email by remember { mutableStateOf("") }
-        var password by remember { mutableStateOf("") }
-        var confirmPassword by remember { mutableStateOf("") }
+        var username by rememberSaveable { mutableStateOf("") }
+        var email by rememberSaveable { mutableStateOf("") }
+        var password by rememberSaveable { mutableStateOf("") }
+        var confirmPassword by rememberSaveable { mutableStateOf("") }
 
         //switch between registration and login
-        var isRegistering by remember { mutableStateOf(true) } // Toggle between registration and login
+        var isRegistering by rememberSaveable { mutableStateOf(true) } // Toggle between registration and login
 
         var registered by remember { mutableStateOf(Pair(false, "")) }
         var logged by remember { mutableStateOf(Pair(false, "")) }
@@ -145,17 +144,18 @@ fun RegLogScreen(navController: NavController, regLogViewModel: RegLogViewModel)
                         .addOnCompleteListener { task ->
                             if (task.isSuccessful) {
                                 val user = auth.currentUser
-                                val player = Player(
+                                val user2 = User(
                                     uid = user?.uid ?: "",
                                     username = user?.displayName ?: "",
-                                    email = user?.email ?: ""
+                                    email = user?.email ?: "",
+                                    profilePicture = user?.photoUrl.toString()
                                 )
 
                                 // Check if the user is new or existing
-                                regLogViewModel.checkUserExists(player.uid) { exists ->
+                                regLogViewModel.checkUserExists(user2.uid) { exists ->
                                     if (!exists) {
                                         // New user, create account
-                                        regLogViewModel.createPlayer(player)
+                                        regLogViewModel.createUser(user2)
                                         Log.d("RegLogScreen", "New user created")
                                     } else {
                                         // Existing user, log in
@@ -299,6 +299,9 @@ fun RegLogScreen(navController: NavController, regLogViewModel: RegLogViewModel)
             Button(modifier = Modifier.size(width = buttonWidthSize, height = 38.dp),
                 onClick = { /* Handle Google OAuth */
                     coroutineScope.launch {
+                        // Sign out before starting sign-in flow
+                        googleSignInClient.signOut()
+
                         val signInIntent = googleSignInClient.signInIntent
                         launcher.launch(signInIntent)
                     }
@@ -308,7 +311,7 @@ fun RegLogScreen(navController: NavController, regLogViewModel: RegLogViewModel)
                     containerColor = Color.Magenta,
                     contentColor = Color.White )
             ) {
-                Text(text = if (isRegistering) "Google sign up" else "Google sign in",
+                Text(text = "Google sign up/sign in",
                     fontSize = fontSize)
             }
             Spacer(modifier = Modifier.height(spacing))
