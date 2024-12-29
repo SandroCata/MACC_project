@@ -208,7 +208,7 @@ fun RegLogScreen(navController: NavController, regLogViewModel: RegLogViewModel)
                     colors = TextFieldDefaults.outlinedTextFieldColors(
                         unfocusedBorderColor = Color.White,
                         focusedBorderColor = Color.White,
-                        cursorColor = Color.White,
+                        cursorColor = Color.Black,
                         containerColor = Color.White // Set text color to white
                     )
                 )
@@ -222,7 +222,7 @@ fun RegLogScreen(navController: NavController, regLogViewModel: RegLogViewModel)
                 colors = TextFieldDefaults.outlinedTextFieldColors(
                     unfocusedBorderColor = Color.White,
                     focusedBorderColor = Color.White,
-                    cursorColor = Color.White,
+                    cursorColor = Color.Black,
                     containerColor = Color.White // Set text color to white
                 )
             )
@@ -235,7 +235,7 @@ fun RegLogScreen(navController: NavController, regLogViewModel: RegLogViewModel)
                 colors = TextFieldDefaults.outlinedTextFieldColors(
                     unfocusedBorderColor = Color.White,
                     focusedBorderColor = Color.White,
-                    cursorColor = Color.White,
+                    cursorColor = Color.Black,
                     containerColor = Color.White // Set text color to white
                 ),
                 visualTransformation = PasswordVisualTransformation()
@@ -250,7 +250,7 @@ fun RegLogScreen(navController: NavController, regLogViewModel: RegLogViewModel)
                     colors = TextFieldDefaults.outlinedTextFieldColors(
                         unfocusedBorderColor = Color.White,
                         focusedBorderColor = Color.White,
-                        cursorColor = Color.White,
+                        cursorColor = Color.Black,
                         containerColor = Color.White // Set text color to white
                     ),
                     visualTransformation = PasswordVisualTransformation()

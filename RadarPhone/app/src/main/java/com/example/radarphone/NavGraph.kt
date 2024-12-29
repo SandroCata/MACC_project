@@ -21,7 +21,7 @@ fun NavGraph(regLogViewModel: RegLogViewModel, audioViewModel: AudioViewModel) {
     NavHost(navController = navController, startDestination = "first_screen") {
         composable("first_screen") { FirstScreen(navController) }
         composable("RegLog_screen") { RegLogScreen(navController, regLogViewModel) }
-        composable("Home_screen") { HomeScreen(navController, regLogViewModel) }
+        composable("Home_screen") { HomeScreen(navController, regLogViewModel, audioViewModel) }
         composable("Settings_screen") { SettingsScreen(navController, audioViewModel) }
         composable("About_screen") { AboutScreen(navController)}
     }

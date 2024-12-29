@@ -22,7 +22,7 @@ class MainActivity : ComponentActivity() {
     }
     override fun onStart() {
         super.onStart()
-        audioViewModel.initializeMediaPlayer(this, R.raw.background_music) // Initialize if not already
+        audioViewModel.initializeMediaPlayer(this, R.raw.take_on_me) // Initialize if not already
         audioViewModel.mediaPlayer?.start() // Resume playback if paused
     }
 

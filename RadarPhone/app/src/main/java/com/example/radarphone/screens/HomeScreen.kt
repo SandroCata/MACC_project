@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -26,6 +27,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,18 +40,25 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.radarphone.R
+import com.example.radarphone.viewModels.AudioViewModel
 import com.example.radarphone.viewModels.RegLogViewModel
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(navController: NavController, regLogViewModel: RegLogViewModel) {
+fun HomeScreen(navController: NavController, regLogViewModel: RegLogViewModel, audioViewModel: AudioViewModel) {
 
     val configuration = LocalConfiguration.current
 
@@ -87,6 +96,11 @@ fun HomeScreen(navController: NavController, regLogViewModel: RegLogViewModel) {
         80.dp
     }
 
+    val user = FirebaseAuth.getInstance().currentUser
+    val databaseRef = FirebaseDatabase.getInstance().reference
+    var username by remember { mutableStateOf("") }
+    var song: String? = null
+
     // Remember a CoroutineScope
     val coroutineScope = rememberCoroutineScope()
 
@@ -94,6 +108,20 @@ fun HomeScreen(navController: NavController, regLogViewModel: RegLogViewModel) {
     var expanded by remember { mutableStateOf(false) }
     val options = listOf("","Restaurant", "Supermarket", "Gas Station", "Park")
     var selectedOptionText by remember { mutableStateOf(options[0]) }
+
+    LaunchedEffect(user) {
+        if (user != null) {
+            // ... (existing code to fetch profile picture) ...
+
+            // Fetch username from Firebase
+            databaseRef
+                .child("users/${user.uid}/username")
+                .get()
+                .addOnSuccessListener { snapshot ->
+                    username = snapshot.getValue(String::class.java) ?: ""
+                }
+        }
+    }
 
     //background image
     Image(
@@ -110,13 +138,20 @@ fun HomeScreen(navController: NavController, regLogViewModel: RegLogViewModel) {
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = "Hello there, Seeker! Time to play ;)",
+            text = buildAnnotatedString {
+                append("Welcome, ")
+                withStyle(style = SpanStyle(color = Color.Red)) {
+                    append(username)
+                }
+                append("!")
+                append("\nTime to play ;)")
+            },
             color = Color.White,
-            fontFamily = FontFamily.Cursive,
+            fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.Medium,
-            fontSize = 35.sp
+            fontSize = 22.sp
         )
-        Spacer(modifier = Modifier.height(spacing))
+        Spacer(modifier = Modifier.height(spacing-5.dp))
 
         ExposedDropdownMenuBox(
             expanded = expanded,
@@ -147,7 +182,7 @@ fun HomeScreen(navController: NavController, regLogViewModel: RegLogViewModel) {
                 }
             }
         }
-        Spacer(modifier = Modifier.height(spacing))
+        Spacer(modifier = Modifier.height(spacing-15.dp))
         // Start the game button
         Button(
             onClick = {
@@ -169,7 +204,7 @@ fun HomeScreen(navController: NavController, regLogViewModel: RegLogViewModel) {
         ) {
             Text(text = "Start the game", fontSize = fontSize)
         }
-        Spacer(modifier = Modifier.height(spacing))
+        Spacer(modifier = Modifier.height(spacing-15.dp))
         // About the game button
         Button(
             onClick = { /* Navigate to About screen */
@@ -185,46 +220,26 @@ fun HomeScreen(navController: NavController, regLogViewModel: RegLogViewModel) {
         ) {
             Text(text = "About the game", fontSize = fontSize)
         }
-        Spacer(modifier = Modifier.height(spacing))
+        Spacer(modifier = Modifier.height(spacing-15.dp))
         Row(
             modifier = Modifier
-                .fillMaxSize() // Occupy the entire width
                 .align(Alignment.CenterHorizontally)
-                .padding(16.dp), // Add padding around the row
+                .padding(5.dp), // Add padding around the row
             horizontalArrangement = Arrangement.SpaceBetween, // Space elements evenly
             verticalAlignment = Alignment.Bottom // Align to the bottom
         ) {
-            Button(
-                modifier = Modifier
-                    .height(38.dp)
-                    .wrapContentSize() // Allow button to wrap its content
-                    .widthIn(max = buttonWidthSize),// Limit maximum width,
-                onClick = { /* Handle signout (both if authenticated through google or through form) and navigate to RegLog_screen */
-                    coroutineScope.launch {
-                        val signOutResult = regLogViewModel.signout()
-                        if (signOutResult.first) {
-                            // Sign-out successful
-                            Toast.makeText(context, signOutResult.second, Toast.LENGTH_SHORT).show()
-                            navController.navigate("RegLog_screen") {
-                                // Clear back stack (Removes all destinations from the back stack up to and including the RegLog_screen.
-                                // As a result, the back stack is now empty, and the RegLog_screen is the only destination in the navigation history.
-                                // This ensures that the user cannot accidentally go back to the HomeScreen after signing out.)
-                                popUpTo("RegLog_screen") { inclusive = true }
-                            }
-                        } else {
-                            // Sign-out failed
-                            Toast.makeText(context, signOutResult.second, Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.Magenta,
-                    contentColor = Color.White
-                )
+            // Music icon button
+            IconButton(
+                onClick = { /* Play next song logic */
+                    song = audioViewModel.playNextSong(context)
+                    Toast.makeText(context, "Now playing: $song", Toast.LENGTH_SHORT).show()},
+                modifier = Modifier.size(width = iconWidthSize - 20.dp, height = 38.dp)
             ) {
-                Text(
-                    text = "Sign out",
-                    fontSize = fontSize
+                Icon(
+                    modifier = Modifier.size(width = iconWidthSize, height = 38.dp),
+                    imageVector = Icons.Filled.PlayArrow, // Use music note icon
+                    contentDescription = "Next Song",
+                    tint = Color.White
                 )
             }
             IconButton(
@@ -238,6 +253,41 @@ fun HomeScreen(navController: NavController, regLogViewModel: RegLogViewModel) {
                     tint = Color.White // Set icon color to white
                 )
             }
+        }
+        if(!changeSize)
+            Spacer(modifier = Modifier.height(spacing))
+        Button(
+            modifier = Modifier
+                .height(38.dp)
+                .wrapContentSize() // Allow button to wrap its content
+                .widthIn(max = buttonWidthSize),// Limit maximum width,
+            onClick = { /* Handle signout (both if authenticated through google or through form) and navigate to RegLog_screen */
+                coroutineScope.launch {
+                    val signOutResult = regLogViewModel.signout()
+                    if (signOutResult.first) {
+                        // Sign-out successful
+                        Toast.makeText(context, signOutResult.second, Toast.LENGTH_SHORT).show()
+                        navController.navigate("RegLog_screen") {
+                            // Clear back stack (Removes all destinations from the back stack up to and including the RegLog_screen.
+                            // As a result, the back stack is now empty, and the RegLog_screen is the only destination in the navigation history.
+                            // This ensures that the user cannot accidentally go back to the HomeScreen after signing out.)
+                            popUpTo("RegLog_screen") { inclusive = true }
+                        }
+                    } else {
+                        // Sign-out failed
+                        Toast.makeText(context, signOutResult.second, Toast.LENGTH_SHORT).show()
+                    }
+                }
+            },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.Magenta,
+                contentColor = Color.White
+            )
+        ) {
+            Text(
+                text = "Sign out",
+                fontSize = fontSize
+            )
         }
     }
 }
