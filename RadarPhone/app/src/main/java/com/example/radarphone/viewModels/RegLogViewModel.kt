@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.example.radarphone.R
 import com.google.firebase.auth.FirebaseAuth
 import com.example.radarphone.dataStructures.User
 import com.google.firebase.database.FirebaseDatabase
