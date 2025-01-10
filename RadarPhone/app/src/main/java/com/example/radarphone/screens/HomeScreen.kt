@@ -188,6 +188,7 @@ fun HomeScreen(navController: NavController, regLogViewModel: RegLogViewModel, a
             onClick = {
                 if (selectedOptionText.isNotEmpty() && selectedOptionText != options[0]) {
                     // Start the game logic
+                    navController.navigate("Game_screen")
 
                 }
                 else {

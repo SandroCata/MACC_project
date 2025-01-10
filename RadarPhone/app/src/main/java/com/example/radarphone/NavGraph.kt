@@ -6,6 +6,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.compose.runtime.Composable
 import com.example.radarphone.screens.AboutScreen
 import com.example.radarphone.screens.FirstScreen
+import com.example.radarphone.screens.GameScreen
 import com.example.radarphone.screens.HomeScreen
 import com.example.radarphone.screens.RegLogScreen
 import com.example.radarphone.screens.SettingsScreen
@@ -24,5 +25,6 @@ fun NavGraph(regLogViewModel: RegLogViewModel, audioViewModel: AudioViewModel) {
         composable("Home_screen") { HomeScreen(navController, regLogViewModel, audioViewModel) }
         composable("Settings_screen") { SettingsScreen(navController, audioViewModel) }
         composable("About_screen") { AboutScreen(navController)}
+        composable("Game_screen") { GameScreen(navController)}
     }
 }
