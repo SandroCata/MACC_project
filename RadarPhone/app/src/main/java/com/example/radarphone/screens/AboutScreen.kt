@@ -81,9 +81,9 @@ fun AboutScreen(navController: NavController) {
         Spacer(modifier = Modifier.height(spacing))
 
         Column(
-            modifier = Modifier.fillMaxSize(), // Occupy remaining space
-            horizontalAlignment = Alignment.CenterHorizontally, // Center horizontally
-            verticalArrangement = Arrangement.Top // Center vertically
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Top
         ) {
             // Brief Description
             Text(
@@ -108,14 +108,14 @@ fun AboutScreen(navController: NavController) {
             )
             Spacer(modifier = Modifier.height(10.dp))
             Text(
-                text = "2. Use the radar to navigate and get closer to the target.",
+                text = "2. Use the radar to navigate and get closer to the target. The radar updates as you move in the real world.",
                 color = Color.White,
                 fontSize = fontSize,
                 textAlign = TextAlign.Left
             )
             Spacer(modifier = Modifier.height(10.dp))
             Text(
-                text = "3. Move in the real world to align with the radar's directions.",
+                text = "3. Move physically to align yourself with the radar's directions. Your movements will reflect in the radar display.",
                 color = Color.White,
                 fontSize = fontSize,
                 textAlign = TextAlign.Left
@@ -146,7 +146,6 @@ fun AboutScreen(navController: NavController) {
                     fontSize = fontSize
                 )
             }
-
         }
     }
 }
