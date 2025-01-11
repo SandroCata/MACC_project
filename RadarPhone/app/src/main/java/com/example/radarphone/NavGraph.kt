@@ -4,6 +4,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.compose.runtime.Composable
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import com.example.radarphone.screens.AboutScreen
 import com.example.radarphone.screens.FirstScreen
 import com.example.radarphone.screens.GameScreen
@@ -25,6 +27,18 @@ fun NavGraph(regLogViewModel: RegLogViewModel, audioViewModel: AudioViewModel) {
         composable("Home_screen") { HomeScreen(navController, regLogViewModel, audioViewModel) }
         composable("Settings_screen") { SettingsScreen(navController, audioViewModel) }
         composable("About_screen") { AboutScreen(navController)}
-        composable("Game_screen") { GameScreen(navController)}
+        composable(
+            "Game_screen/{placeName}/{lat}/{lng}",
+            arguments = listOf(
+                navArgument("placeName") { type = NavType.StringType },
+                navArgument("lat") { type = NavType.FloatType },
+                navArgument("lng") { type = NavType.FloatType }
+            )
+        ) { backStackEntry ->
+            val placeName = backStackEntry.arguments?.getString("placeName")
+            val lat = backStackEntry.arguments?.getFloat("lat")?.toDouble()
+            val lng = backStackEntry.arguments?.getFloat("lng")?.toDouble()
+            GameScreen(navController, placeName, lat, lng)
+        }
     }
 }

@@ -94,6 +94,13 @@ fun AboutScreen(navController: NavController) {
             )
             Spacer(modifier = Modifier.height(20.dp))
             Text(
+                text = "IMPORTANT: To make the game start, enable location permission for the app in your system settings!!!",
+                color = Color.White,
+                fontSize = fontSize,
+                textAlign = TextAlign.Left
+            )
+            Spacer(modifier = Modifier.height(20.dp))
+            Text(
                 text = "How to Play:",
                 color = Color.Magenta,
                 fontSize = fontSize,

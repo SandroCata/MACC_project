@@ -20,7 +20,7 @@ import com.example.radarphone.R
 import kotlinx.coroutines.delay
 
 @Composable
-fun GameScreen(navController: NavController) {
+fun GameScreen(navController: NavController, placeName: String?, lat: Double?, lng: Double?) {
     val configuration = LocalConfiguration.current
     val changeSize = (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE)
 
@@ -64,6 +64,9 @@ fun GameScreen(navController: NavController) {
                     timeLeft--
                 }
             }
+
+            Text(text = "Place: $placeName", fontSize = 20.sp)
+            Text(text = "Location: ($lat, $lng)", fontSize = 20.sp)
 
             Text(
                 text = "Time left: ${timeLeft / 60}:${(timeLeft % 60).toString().padStart(2, '0')}",

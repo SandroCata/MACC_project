@@ -19,3 +19,9 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+-keep class java.lang.invoke.* { *; }
+
+# Per Retrofit e OkHttp
+-keepattributes Signature
+-keepattributes *Annotation*
+-keep class retrofit2.** { *; }

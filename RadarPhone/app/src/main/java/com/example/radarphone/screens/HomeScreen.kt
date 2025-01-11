@@ -1,5 +1,6 @@
 package com.example.radarphone.screens
 
+import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.widget.Toast
 import androidx.compose.foundation.Image
@@ -40,7 +41,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -48,13 +48,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import com.example.radarphone.R
+import com.example.radarphone.server.ApiService
+import com.example.radarphone.server.LocationRequest
+import com.example.radarphone.server.RetrofitClient
 import com.example.radarphone.viewModels.AudioViewModel
 import com.example.radarphone.viewModels.RegLogViewModel
+import com.google.android.gms.location.LocationServices
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.launch
+import android.Manifest
+import android.util.Log
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -100,6 +107,7 @@ fun HomeScreen(navController: NavController, regLogViewModel: RegLogViewModel, a
     val databaseRef = FirebaseDatabase.getInstance().reference
     var username by remember { mutableStateOf("") }
     var song: String? = null
+    val fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(LocalContext.current)
 
     // Remember a CoroutineScope
     val coroutineScope = rememberCoroutineScope()
@@ -188,8 +196,64 @@ fun HomeScreen(navController: NavController, regLogViewModel: RegLogViewModel, a
             onClick = {
                 if (selectedOptionText.isNotEmpty() && selectedOptionText != options[0]) {
                     // Start the game logic
-                    navController.navigate("Game_screen")
+                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                        Log.d("Location", "Permission granted")
+                        fusedLocationProviderClient.lastLocation.addOnSuccessListener { location ->
+                            if (location != null) {
+                                // Create service instance
+                                val apiService =
+                                    RetrofitClient.instance.create(ApiService::class.java)
 
+                                // Make the request to the API
+                                val request = LocationRequest(
+                                    lat = location.latitude,
+                                    lon = location.longitude,
+                                    typ = selectedOptionText.lowercase()
+                                )
+
+                                coroutineScope.launch {
+                                    try {
+                                        Log.d("Start game", "before search place call")
+                                        val response = apiService.searchPlace(request).execute() //!!!!!!!!!!!!!!HERE IS THE PROBLEM!!!!!!!!!!!!!!!!!!
+                                        Log.d("Start game", "after search place call")
+                                        if (response.isSuccessful) {
+                                            val place = response.body()
+                                            if (place != null) {
+                                                // Navigate to GameScreen with location data
+                                                navController.navigate("Game_screen/${place.name}/${place.location.lat}/${place.location.lng}")
+                                            } else {
+                                                Toast.makeText(
+                                                    context,
+                                                    "Nowhere nearby was found",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                        } else {
+                                            Toast.makeText(
+                                                context,
+                                                "Error: ${response.errorBody()?.string()}",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                    } catch (e: Exception) {
+                                        Toast.makeText(
+                                            context,
+                                            "Error in request: ${e.message}",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                }
+                            } else {
+                                Toast.makeText(
+                                    context,
+                                    "Failed to get location",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
+                    } else {
+                        Toast.makeText(context, "Enable location permissions", Toast.LENGTH_SHORT).show()
+                    }
                 }
                 else {
                     Toast.makeText(context, "Select a location from dropdown window above", Toast.LENGTH_SHORT).show()
