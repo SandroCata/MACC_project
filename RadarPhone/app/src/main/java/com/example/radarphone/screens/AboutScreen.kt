@@ -122,7 +122,7 @@ fun AboutScreen(navController: NavController) {
             )
             Spacer(modifier = Modifier.height(10.dp))
             Text(
-                text = "3. Move physically to align yourself with the radar's directions. Your movements will reflect in the radar display.",
+                text = "3. Move physically to align yourself with the radar's directions. For a better precision, keep the phone in horizontal positioning.",
                 color = Color.White,
                 fontSize = fontSize,
                 textAlign = TextAlign.Left
