@@ -25,3 +25,6 @@
 -keepattributes Signature
 -keepattributes *Annotation*
 -keep class retrofit2.** { *; }
+
+#warning supression
+-dontwarn java.lang.invoke.MethodHandles$Lookup

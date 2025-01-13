@@ -62,6 +62,10 @@ import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.launch
 import android.Manifest
 import android.util.Log
+import com.example.radarphone.server.Place
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -114,8 +118,9 @@ fun HomeScreen(navController: NavController, regLogViewModel: RegLogViewModel, a
 
     // Scrollable select button
     var expanded by remember { mutableStateOf(false) }
-    val options = listOf("","Restaurant", "Supermarket", "Gas Station", "Park")
+    val options = listOf("","Restaurant", "Supermarket", "Fuel", "Park")
     var selectedOptionText by remember { mutableStateOf(options[0]) }
+    var isGameStarting by remember { mutableStateOf(false) } // New state variable
 
     LaunchedEffect(user) {
         if (user != null) {
@@ -194,69 +199,80 @@ fun HomeScreen(navController: NavController, regLogViewModel: RegLogViewModel, a
         // Start the game button
         Button(
             onClick = {
-                if (selectedOptionText.isNotEmpty() && selectedOptionText != options[0]) {
-                    // Start the game logic
-                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                        Log.d("Location", "Permission granted")
-                        fusedLocationProviderClient.lastLocation.addOnSuccessListener { location ->
-                            if (location != null) {
-                                // Create service instance
-                                val apiService =
-                                    RetrofitClient.instance.create(ApiService::class.java)
+                if (!isGameStarting) {
+                    if (selectedOptionText.isNotEmpty() && selectedOptionText != options[0]) {
+                        // Start the game logic
+                        isGameStarting = true // Set the flag to true
+                        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                            Log.d("Location", "Permission granted")
+                            fusedLocationProviderClient.lastLocation.addOnSuccessListener { location ->
+                                if (location != null) {
+                                    // Create service instance
+                                    val apiService =
+                                        RetrofitClient.instance.create(ApiService::class.java)
 
-                                // Make the request to the API
-                                val request = LocationRequest(
-                                    lat = location.latitude,
-                                    lon = location.longitude,
-                                    typ = selectedOptionText.lowercase()
-                                )
-
-                                coroutineScope.launch {
-                                    try {
-                                        Log.d("Start game", "before search place call")
-                                        val response = apiService.searchPlace(request).execute() //!!!!!!!!!!!!!!HERE IS THE PROBLEM!!!!!!!!!!!!!!!!!!
-                                        Log.d("Start game", "after search place call")
-                                        if (response.isSuccessful) {
-                                            val place = response.body()
-                                            if (place != null) {
-                                                // Navigate to GameScreen with location data
-                                                navController.navigate("Game_screen/${place.name}/${place.location.lat}/${place.location.lng}")
+                                    // Make the request to the API
+                                    val request = LocationRequest(
+                                        lat = location.latitude,
+                                        lon = location.longitude,
+                                        typ = selectedOptionText.lowercase()
+                                    )
+                                    Log.d("My request Location", "Location: ${location.latitude}, ${location.longitude}")
+                                    apiService.searchPlace(request).enqueue(object : Callback<Place> {
+                                        override fun onResponse(
+                                            call: Call<Place>,
+                                            response: Response<Place>
+                                        ) {
+                                            if (response.isSuccessful) {
+                                                val place = response.body()
+                                                if (place != null) {
+                                                    // Navigate to GameScreen with location data
+                                                    navController.navigate("Game_screen/${place.name}/${place.findlocation[0]}/${place.findlocation[1]}")
+                                                } else {
+                                                    Toast.makeText(
+                                                        context,
+                                                        "No $selectedOptionText nearby was found",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                }
                                             } else {
+                                                Log.d("Response unsuccessful", "${response.errorBody()?.string()}")
                                                 Toast.makeText(
                                                     context,
-                                                    "Nowhere nearby was found",
+                                                    "Error: ${response.errorBody()?.string()}",
                                                     Toast.LENGTH_SHORT
                                                 ).show()
                                             }
-                                        } else {
+                                        }
+
+                                        override fun onFailure(call: Call<Place>, t: Throwable) {
+                                            Log.e("Start game", "Error in request: ${t.message}", t)
                                             Toast.makeText(
                                                 context,
-                                                "Error: ${response.errorBody()?.string()}",
+                                                "Error in request: ${t.message}",
                                                 Toast.LENGTH_SHORT
                                             ).show()
                                         }
-                                    } catch (e: Exception) {
-                                        Toast.makeText(
-                                            context,
-                                            "Error in request: ${e.message}",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    }
+                                    })
+                                } else {
+                                    Toast.makeText(
+                                        context,
+                                        "Failed to get location",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
                                 }
-                            } else {
-                                Toast.makeText(
-                                    context,
-                                    "Failed to get location",
-                                    Toast.LENGTH_SHORT
-                                ).show()
                             }
+                        } else {
+                            Toast.makeText(context, "Enable location permissions", Toast.LENGTH_SHORT)
+                                .show()
                         }
                     } else {
-                        Toast.makeText(context, "Enable location permissions", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            context,
+                            "Select a location from dropdown window above",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
-                }
-                else {
-                    Toast.makeText(context, "Select a location from dropdown window above", Toast.LENGTH_SHORT).show()
                 }
             },
             modifier = Modifier
