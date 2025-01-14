@@ -263,7 +263,7 @@ fun HomeScreen(navController: NavController, regLogViewModel: RegLogViewModel, a
                                 }
                             }
                         } else {
-                            Toast.makeText(context, "Enable location permissions", Toast.LENGTH_SHORT)
+                            Toast.makeText(context, "Activate location permission for the app", Toast.LENGTH_SHORT)
                                 .show()
                         }
                     } else {
