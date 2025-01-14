@@ -10,6 +10,7 @@ import android.hardware.SensorManager
 import android.location.Location
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.animation.core.copy
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -32,6 +33,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.core.content.getSystemService
 import androidx.navigation.NavController
 import com.example.radarphone.R
 import com.google.android.gms.location.LocationCallback
@@ -43,13 +45,14 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlin.math.atan2
 import kotlin.math.cos
+import kotlin.math.roundToInt
 import kotlin.math.sin
+import kotlin.rem
 
 //ISSUES:
 //Parks do not give back lat and lng.
 //Orientation of place to find not working correctly
 //Distance seems to be correctly updating now
-
 @Composable
 fun GameScreen(navController: NavController, placeName: String?, lat: Double?, lng: Double?) {
     val configuration = LocalConfiguration.current
@@ -60,8 +63,6 @@ fun GameScreen(navController: NavController, placeName: String?, lat: Double?, l
     } else {
         80.dp
     }
-
-    //Log.d("Place location", "$lat, $lng")
 
     val context = LocalContext.current
     val fusedLocationProviderClient =
@@ -143,12 +144,14 @@ fun GameScreen(navController: NavController, placeName: String?, lat: Double?, l
         Text(text = "Place: $placeName", fontSize = 18.sp, color = Color.White)
 
         // Display the distance
-        Text(text = "Distance: ${currentDistance.toInt()} m", fontSize = 10.sp, color = Color.White)
+        Text(text = "Distance: ${currentDistance.roundToInt()} m", fontSize = 10.sp, color = Color.White)
 
         Spacer(modifier = Modifier.weight(1f))
         // Radar
         Radar(
-            modifier = Modifier.fillMaxWidth().weight(4f),
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(4f),
             myLat = myLat,
             myLng = myLng,
             targetLat = lat ?: 0.0,
@@ -178,7 +181,7 @@ fun GameScreen(navController: NavController, placeName: String?, lat: Double?, l
             }
 
             Text(
-                text = "Time left: ${timeLeft / 60}:${(timeLeft % 60).toString().padStart(2, '0')}",
+                text= "Time left: ${timeLeft / 60}:${(timeLeft % 60).toString().padStart(2, '0')}",
                 color = Color.White,
                 fontSize = 16.sp
             )
@@ -205,98 +208,110 @@ fun GameScreen(navController: NavController, placeName: String?, lat: Double?, l
 fun Radar(
     modifier: Modifier = Modifier,
     myLat: Double,
-    myLng:Double,
+    myLng: Double,
     targetLat: Double,
     targetLng: Double,
     currentDistance: Float
 ) {
+
+    //Log.d("targetLat outside update", "$targetLat")
+    //Log.d("targetLong outside update", "$targetLng")
+
     var sweepAngle by remember { mutableFloatStateOf(0f) }
     val context = LocalContext.current
-    var targetAngle by remember { mutableFloatStateOf(0f) }
+    var azimuth by remember { mutableFloatStateOf(0f) }
 
-    // Gets the system's sensor service.
-    val sensorManager =
-        context.getSystemService(android.content.Context.SENSOR_SERVICE) as SensorManager
-    // Gets the accelerometer (measures acceleration in 3 axes)
+    // Calibration variables
+    var isCalibrating by remember { mutableStateOf(false) }
+    var calibrationData by remember { mutableStateOf(mutableListOf<FloatArray>()) }
+    var calibrationOffsets by remember { mutableStateOf(FloatArray(3) { 0f }) }
+    var isCalibrated by remember { mutableStateOf(false) }
+    var calibrationMessage by remember { mutableStateOf("") }
+
+    // Sensor setup
+    val sensorManager = context.getSystemService(android.content.Context.SENSOR_SERVICE) as SensorManager
     val accelerometerSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
-    // Gets the magnetometer (measures the Earth's magnetic field)
     val magnetometerSensor = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
 
-    // Store the latest sensor readings
     var accelerometerValues by remember { mutableStateOf(FloatArray(3)) }
     var magnetometerValues by remember { mutableStateOf(FloatArray(3)) }
 
-    // Store the filtered sensor readings
-    var filteredAccelerometerValues by remember { mutableStateOf(FloatArray(3)) }
-    var filteredMagnetometerValues by remember { mutableStateOf(FloatArray(3)) }
-
-    // This object listens for changes in the accelerometer and magnetometer.
     val sensorEventListener = object : SensorEventListener {
         override fun onSensorChanged(event: SensorEvent) {
             when (event.sensor.type) {
-                // store the new readings for these sensors events
                 Sensor.TYPE_ACCELEROMETER -> {
                     accelerometerValues = event.values.clone()
-                    // Apply low-pass filter to accelerometer readings
-                    filteredAccelerometerValues = lowPassFilter(accelerometerValues, filteredAccelerometerValues)
                 }
 
                 Sensor.TYPE_MAGNETIC_FIELD -> {
                     magnetometerValues = event.values.clone()
-                    // Apply low-pass filter to magnetometer readings
-                    filteredMagnetometerValues = lowPassFilter(magnetometerValues, filteredMagnetometerValues)
+                    if (isCalibrating) {
+                        calibrationData.add(magnetometerValues.clone())
+                    }
                 }
             }
-            // A 3x3 matrix that represents the phone's orientation in space.
+            // Apply calibration offsets
+            if (isCalibrated) {
+                magnetometerValues[0] -= calibrationOffsets[0]
+                magnetometerValues[1] -= calibrationOffsets[1]
+                magnetometerValues[2] -= calibrationOffsets[2]
+            }
+
             val rotationMatrix = FloatArray(9)
-            // A matrix that represents the inclination of the magnetic field.
             val inclinationMatrix = FloatArray(9)
-            // float array of size 3. It will contain the orientation angles.
             val orientationAngles = FloatArray(3)
 
-            // This is the key function. It takes the accelerometer and magnetometer readings and combines them to calculate the rotationMatrix.
-            // This matrix describes how the phone is rotated relative to a fixed coordinate system
             if (SensorManager.getRotationMatrix(
                     rotationMatrix,
                     inclinationMatrix,
-                    filteredAccelerometerValues,
-                    filteredMagnetometerValues
+                    accelerometerValues,
+                    magnetometerValues
                 )
             ) {
-                // This function takes the rotationMatrix and converts it into three angles:
-                // orientationAngles[0] (Azimuth): The angle between the magnetic north direction and the y-axis of the device. It is the angle we need.
-                // orientationAngles[1] (Pitch): The angle between the x-axis and the horizontal plane.
-                // orientationAngles[2] (Roll): The angle between the y-axis and the horizontal plane.
                 SensorManager.getOrientation(rotationMatrix, orientationAngles)
-                // the phone's orientation relative to magnetic north (obtained from the sensors).
-                //val azimuth = Math.toDegrees(orientationAngles[0].toDouble()).toFloat()
-                val azimuth = Math.toDegrees(orientationAngles[0].toDouble()).toFloat()
-                val bearing = calculateBearing(myLat, myLng, targetLat, targetLng)
-                // the final angle of the target on the radar, which is the bearing adjusted by the azimuth
-                targetAngle = (bearing - azimuth + 360) % 360
+                azimuth = Math.toDegrees(orientationAngles[0].toDouble()).toFloat()
+
             }
         }
 
         override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {}
     }
+    //targetAngle is now a state variable
+    var targetAngle by remember { mutableFloatStateOf(0f) }
+    var previousSweepAngle by remember { mutableFloatStateOf(0f) }
 
+    fun updateTargetAngle() {
+        //Log.d("targetLat inside update", "$targetLat")
+        //Log.d("targetLong inside update", "$targetLng")
+        val bearing = calculateBearing(myLat, myLng, targetLat, targetLng)
+        // Calculate the relative target angle based on the initial azimuth
+        targetAngle = (bearing - azimuth + 360) % 360
+        //Log.d("TargetAngle", "$targetAngle")
+    }
+
+    // Sweep angle animation
     LaunchedEffect(Unit) {
         while (true) {
-            sweepAngle = (sweepAngle + 1f) % 360f // slower sweep
-            delay(50L) // Adjust the speed of the sweep here
+            previousSweepAngle = sweepAngle
+            sweepAngle = (sweepAngle + 1f) % 360f // Increased speed
+            // Detect sweep completion
+            if (previousSweepAngle > sweepAngle && previousSweepAngle > 180f) {
+                updateTargetAngle()
+            }
+            delay(10L) // Reduced delay
         }
     }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(myLat, myLng, targetLat, targetLng) {
         sensorManager.registerListener(
             sensorEventListener,
             accelerometerSensor,
-            SensorManager.SENSOR_DELAY_UI
+            SensorManager.SENSOR_DELAY_GAME
         )
         sensorManager.registerListener(
             sensorEventListener,
             magnetometerSensor,
-            SensorManager.SENSOR_DELAY_UI
+            SensorManager.SENSOR_DELAY_GAME
         )
     }
 
@@ -306,12 +321,51 @@ fun Radar(
         }
     }
 
+    // Calibration button
+    Button(onClick = {
+        isCalibrating = true
+        calibrationData.clear()
+        calibrationMessage = "Move the device in a figure-eight motion"
+    }) {
+        Text("Calibrate Compass")
+    }
+
+    // Calibration logic
+    LaunchedEffect(isCalibrating) {
+        if (isCalibrating) {
+            delay(5000) // Collect data for 5 seconds
+            isCalibrating = false
+            if (calibrationData.isNotEmpty()) {
+                val (offsets, success) = calculateCalibrationOffsets(calibrationData)
+                calibrationOffsets = offsets
+                isCalibrated = success
+                calibrationMessage = if (success) {
+                    "Compass calibrated"
+                } else {
+                    "Calibration failed. Move the device more."
+                }
+            }
+        }
+    }
+
+    RadarCanvas(modifier, targetAngle, currentDistance, sweepAngle)
+
+    if (isCalibrating) {
+        Text(text = calibrationMessage, color = Color.White)
+    } else {
+        Text(text = calibrationMessage, color = Color.White)
+    }
+}
+
+
+@Composable
+fun RadarCanvas(modifier: Modifier, targetAngle: Float, currentDistance: Float, sweepAngle: Float) {
     Canvas(modifier = modifier) {
         val canvasWidth = size.width
         val canvasHeight = size.height
         val centerX = canvasWidth / 2
         val centerY = canvasHeight / 2
-        val radius = minOf(centerX, centerY) * 0.9f // Use 90% of the smaller dimension
+        val radius = minOf(centerX, centerY) * 0.9f
 
         // Draw the circles
         drawCircle(
@@ -387,7 +441,6 @@ fun Radar(
     }
 }
 
-// The initial direction from the user to the target (calculated using latitude and longitude).
 fun calculateBearing(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Float {
     val dLon = Math.toRadians(lon2 - lon1)
     val y = sin(dLon) * cos(Math.toRadians(lat2))
@@ -397,14 +450,31 @@ fun calculateBearing(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Fl
     return Math.toDegrees(atan2(y, x)).toFloat()
 }
 
-// Low-pass filter function
-fun lowPassFilter(input: FloatArray, output: FloatArray): FloatArray {
-    val alpha = 0.2f // Adjust this value for more or less smoothing (0.0 to 1.0)
-    if (output.isEmpty()) {
-        return input
+
+fun calculateCalibrationOffsets(calibrationData: List<FloatArray>): Pair<FloatArray, Boolean> {
+    val xValues = calibrationData.map { it[0] }
+    val yValues = calibrationData.map { it[1] }
+    val zValues = calibrationData.map { it[2] }
+
+    val xMin = xValues.minOrNull() ?: 0f
+    val xMax = xValues.maxOrNull() ?: 0f
+    val yMin = yValues.minOrNull() ?: 0f
+    val yMax = yValues.maxOrNull() ?: 0f
+    val zMin = zValues.minOrNull() ?: 0f
+    val zMax = zValues.maxOrNull() ?: 0f
+
+    val xRange = xMax - xMin
+    val yRange = yMax - yMin
+    val zRange = zMax - zMin
+
+    val threshold = 10f // Adjust this value as needed
+
+    return if (xRange > threshold && yRange > threshold && zRange > threshold) {
+        val xOffset = (xMin + xMax) / 2f
+        val yOffset = (yMin + yMax) / 2f
+        val zOffset = (zMin + zMax) / 2f
+        Pair(floatArrayOf(xOffset, yOffset, zOffset), true)
+    } else {
+        Pair(floatArrayOf(0f, 0f, 0f), false)
     }
-    for (i in input.indices) {
-        output[i] = output[i] + alpha * (input[i] - output[i])
-    }
-    return output
 }
