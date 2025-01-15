@@ -10,6 +10,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -22,6 +23,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -32,6 +34,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
@@ -74,7 +79,6 @@ fun RegLogScreen(navController: NavController, regLogViewModel: RegLogViewModel)
                 .requestEmail()
                 .build()
         )
-
 
         val changeSize = (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE)
         //Log.d("SecondScreen", "Change Size: $changeSize")
@@ -130,7 +134,18 @@ fun RegLogScreen(navController: NavController, regLogViewModel: RegLogViewModel)
         // Remember a CoroutineScope
         val coroutineScope = rememberCoroutineScope()
 
-        //var googleProfilePictureUrl by remember { mutableStateOf<String?>(null) }
+        // Focus states for label visibility
+        var usernameFocused by remember { mutableStateOf(false) }
+        var emailFocused by remember { mutableStateOf(false) }
+        var passwordFocused by remember { mutableStateOf(false) }
+        var confirmPasswordFocused by remember { mutableStateOf(false) }
+
+        // Focus Requesters
+        val usernameFocusRequester = remember { FocusRequester() }
+        val emailFocusRequester = remember { FocusRequester() }
+        val passwordFocusRequester = remember { FocusRequester() }
+        val confirmPasswordFocusRequester = remember { FocusRequester() }
+
 
         val launcher = rememberLauncherForActivityResult(
             contract = ActivityResultContracts.StartActivityForResult()
@@ -199,59 +214,110 @@ fun RegLogScreen(navController: NavController, regLogViewModel: RegLogViewModel)
         ) {
 
             if (isRegistering) {
-                OutlinedTextField(modifier = Modifier
-                    .width(inputWidthSize)
-                    .height(inputHeightSize),
+                OutlinedTextField(
+                    modifier = Modifier
+                        .width(inputWidthSize)
+                        .height(inputHeightSize)
+                        .focusRequester(usernameFocusRequester)
+                        .onFocusEvent {
+                            usernameFocused = it.isFocused
+                        },
                     value = username,
                     onValueChange = { username = it },
-                    label = { Text("Username") },
-                    colors = TextFieldDefaults.outlinedTextFieldColors(
-                        unfocusedBorderColor = Color.White,
+                    label = {
+                        if ((usernameFocused || username.isNotEmpty())) {
+                            Text("")
+                        } else {
+                            Text("Username")
+                        }
+                    },
+                    colors = TextFieldDefaults.outlinedTextFieldColors(unfocusedBorderColor = Color.White,
                         focusedBorderColor = Color.White,
                         cursorColor = Color.Black,
-                        containerColor = Color.White // Set text color to white
+                        containerColor = Color.White,
+                        focusedLabelColor = Color.Black,
+                        unfocusedLabelColor = Color.Black
                     )
                 )
             }
-            OutlinedTextField(modifier = Modifier
-                .width(inputWidthSize)
-                .height(inputHeightSize),
+            OutlinedTextField(
+                modifier = Modifier
+                    .width(inputWidthSize)
+                    .height(inputHeightSize)
+                    .focusRequester(emailFocusRequester)
+                    .onFocusEvent {
+                        emailFocused = it.isFocused
+                    },
                 value = email,
                 onValueChange = { email = it },
-                label = { Text("Email") },
+                label = {
+                    if ((emailFocused || email.isNotEmpty())) {
+                        Text("")
+                    } else {
+                        Text("Email")
+                    }
+                },
                 colors = TextFieldDefaults.outlinedTextFieldColors(
                     unfocusedBorderColor = Color.White,
                     focusedBorderColor = Color.White,
                     cursorColor = Color.Black,
-                    containerColor = Color.White // Set text color to white
+                    containerColor = Color.White,
+                    focusedLabelColor = Color.Black,
+                    unfocusedLabelColor = Color.Black
                 )
             )
-            OutlinedTextField(modifier = Modifier
-                .width(inputWidthSize)
-                .height(inputHeightSize),
+            OutlinedTextField(
+                modifier = Modifier
+                    .width(inputWidthSize)
+                    .height(inputHeightSize)
+                    .focusRequester(passwordFocusRequester)
+                    .onFocusEvent {
+                        passwordFocused = it.isFocused
+                    },
                 value = password,
                 onValueChange = { password = it },
-                label = { Text("Password") },
+                label = {
+                    if ((passwordFocused || password.isNotEmpty())) {
+                        Text("")
+                    } else {
+                        Text("Password")
+                    }
+                },
                 colors = TextFieldDefaults.outlinedTextFieldColors(
                     unfocusedBorderColor = Color.White,
                     focusedBorderColor = Color.White,
                     cursorColor = Color.Black,
-                    containerColor = Color.White // Set text color to white
+                    containerColor = Color.White,
+                    focusedLabelColor = Color.Black,
+                    unfocusedLabelColor = Color.Black
                 ),
                 visualTransformation = PasswordVisualTransformation()
             )
             if (isRegistering) {
-                OutlinedTextField(modifier = Modifier
-                    .width(inputWidthSize)
-                    .height(inputHeightSize),
+                OutlinedTextField(
+                    modifier = Modifier
+                        .width(inputWidthSize)
+                        .height(inputHeightSize)
+                        .focusRequester(confirmPasswordFocusRequester)
+                        .onFocusEvent {
+                            confirmPasswordFocused = it.isFocused
+                        },
                     value = confirmPassword,
                     onValueChange = { confirmPassword = it },
-                    label = { Text("Confirm Password") },
+                    label = {
+                        if ((confirmPasswordFocused || confirmPassword.isNotEmpty())) {
+                            Text("")
+                        } else {
+                            Text("Confirm Password")
+                        }
+                    },
                     colors = TextFieldDefaults.outlinedTextFieldColors(
                         unfocusedBorderColor = Color.White,
                         focusedBorderColor = Color.White,
                         cursorColor = Color.Black,
-                        containerColor = Color.White // Set text color to white
+                        containerColor = Color.White,
+                        focusedLabelColor = Color.Black,
+                        unfocusedLabelColor = Color.Black
                     ),
                     visualTransformation = PasswordVisualTransformation()
                 )
@@ -315,15 +381,23 @@ fun RegLogScreen(navController: NavController, regLogViewModel: RegLogViewModel)
                     fontSize = fontSize)
             }
             Spacer(modifier = Modifier.height(spacing))
-            Text(
-                text = if (isRegistering) "Already signed up? Sign in" else "Not signed up? Sign up",
-                fontSize = fontSize,
-                modifier = Modifier
-                    .clickable { isRegistering = !isRegistering }
-                    .padding(4.dp),
-                color = Color.Yellow
-            )
+            Row(
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = if (isRegistering) "Already a player?" else "Not a player?",
+                    fontSize = fontSize,
+                    color = Color.White
+                )
+                TextButton(onClick = { isRegistering = !isRegistering }) {
+                    Text(
+                        text = if (isRegistering) "Sign in" else "Sign up",
+                        fontSize = fontSize,
+                        color = Color.Magenta
+                    )
+                }
+            }
         }
     }
-
 }

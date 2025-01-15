@@ -68,6 +68,8 @@ import java.util.Date
 import java.util.UUID
 import kotlin.compareTo
 import android.Manifest
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.text.font.FontWeight
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -221,15 +223,12 @@ fun SettingsScreen(navController: NavController, audioViewModel: AudioViewModel)
         contentScale = ContentScale.Crop // Adjust scaling as needed
     )
 
-
     Column(
         modifier = Modifier
             .fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = if(changeSize) Arrangement.Top else Arrangement.Center
     ) {
-        Text(text = "Settings", color = Color.White, fontSize = if(!changeSize) 30.sp else 24.sp)
-        Spacer(modifier = Modifier.height(spacing))
         AsyncImage(
             model = ImageRequest.Builder(context)
                 .data(profilePicture)
@@ -247,6 +246,9 @@ fun SettingsScreen(navController: NavController, audioViewModel: AudioViewModel)
                     galleryLauncher.launch("image/*")
                 }
         )
+        Spacer(modifier = Modifier.height(spacing-25.dp))
+        //display the username of the user
+        Text(text = username, color = Color.White, fontSize = fontSize, fontFamily = FontFamily.Serif)
         Spacer(modifier = Modifier.height(spacing-25.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -284,9 +286,6 @@ fun SettingsScreen(navController: NavController, audioViewModel: AudioViewModel)
                 Text("Take a photo")
             }
         }
-        //TO DO:Modify the Text below to display the username of the user
-        Text(text = username, color = Color.White, fontSize = fontSize, fontFamily = FontFamily.Serif)
-        //TO DO: add one input field to type new user name and a button below to confirm and update username also in firebase realtime database
         Spacer(modifier = Modifier.height(spacing))
         // Input field for new username
         OutlinedTextField(
@@ -324,7 +323,8 @@ fun SettingsScreen(navController: NavController, audioViewModel: AudioViewModel)
         ) {
             Text("Update Username")
         }
-            Text(text = "Volume", color = Color.White) // Volume text
+        Text(text = "Volume", color = Color.White) // Volume text
+        Box(modifier = Modifier.width(inputWidthSize)) {
             Slider(
                 value = sliderPosition,
                 onValueChange = { sliderPosition = it },
@@ -333,38 +333,40 @@ fun SettingsScreen(navController: NavController, audioViewModel: AudioViewModel)
                 },
                 valueRange = 0f..1f // Volume range from 0 to 1
             )
-            Row(
-                verticalAlignment = Alignment.CenterVertically // Align checkbox and text vertically
-            ) {
-                Checkbox(
-                    checked = isMuted,
-                    onCheckedChange = {
-                        isMuted = it
-                        if (isMuted) {
-                            audioViewModel.mute()
-                        } else {
-                            audioViewModel.unmute()
-                        }
-                    }
-                )
-                Text(text = if (isMuted) "Muted" else "Unmuted", color = Color.White)
-            }
-            if(!changeSize)
-                Spacer(modifier = Modifier.height(spacing))
-            Button(
-                modifier = Modifier.size(width = buttonWidthSize, height = 34.dp),
-                onClick = {
-                    navController.navigate("Home_screen")
-                },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.Magenta,
-                    contentColor = Color.White
-                )
-            ) {
-                Text(
-                    text = "Main Menu",
-                    fontSize = fontSize
-                )
-            }
         }
+        Spacer(modifier = Modifier.height(spacing/2))
+        Row(
+            verticalAlignment = Alignment.CenterVertically // Align checkbox and text vertically
+        ) {
+            Checkbox(
+                checked = isMuted,
+                onCheckedChange = {
+                    isMuted = it
+                    if (isMuted) {
+                        audioViewModel.mute()
+                    } else {
+                        audioViewModel.unmute()
+                    }
+                }
+            )
+            Text(text = if (isMuted) "Muted" else "Unmuted", color = Color.White)
+        }
+        if(!changeSize)
+            Spacer(modifier = Modifier.height(spacing))
+        Button(
+            modifier = Modifier.size(width = buttonWidthSize, height = 34.dp),
+            onClick = {
+                navController.navigate("Home_screen")
+            },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.Magenta,
+                contentColor = Color.White
+            )
+        ) {
+            Text(
+                text = "Main Menu",
+                fontSize = fontSize
+            )
+        }
+    }
 }

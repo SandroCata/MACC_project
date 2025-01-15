@@ -1,6 +1,7 @@
 package com.example.radarphone.screens
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.hardware.Sensor
@@ -10,7 +11,6 @@ import android.hardware.SensorManager
 import android.location.Location
 import android.util.Log
 import android.widget.Toast
-import androidx.compose.animation.core.copy
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -30,10 +30,11 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
-import androidx.core.content.getSystemService
 import androidx.navigation.NavController
 import com.example.radarphone.R
 import com.google.android.gms.location.LocationCallback
@@ -47,14 +48,9 @@ import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
-import kotlin.rem
 
-//ISSUES:
-//Parks do not give back lat and lng.
-//Orientation of place to find not working correctly
-//Distance seems to be correctly updating now
 @Composable
-fun GameScreen(navController: NavController, placeName: String?, lat: Double?, lng: Double?) {
+fun GameScreen(navController: NavController, placeName: String?, lat: Double?, lng: Double?, address: String?) {
     val configuration = LocalConfiguration.current
     val changeSize = (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE)
 
@@ -63,6 +59,9 @@ fun GameScreen(navController: NavController, placeName: String?, lat: Double?, l
     } else {
         80.dp
     }
+
+    val myCustomFontFamily = androidx.compose.ui.text.font.FontFamily(
+        Font(R.font.atmo, FontWeight.Normal))
 
     val context = LocalContext.current
     val fusedLocationProviderClient =
@@ -141,12 +140,18 @@ fun GameScreen(navController: NavController, placeName: String?, lat: Double?, l
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
-        Text(text = "Place: $placeName", fontSize = 18.sp, color = Color.White)
 
-        // Display the distance
-        Text(text = "Distance: ${currentDistance.roundToInt()} m", fontSize = 10.sp, color = Color.White)
+        Text(text = "The hunt begins :)", fontSize = 15.sp, color = Color.White, fontFamily = myCustomFontFamily)
 
         Spacer(modifier = Modifier.weight(1f))
+
+        Text(text = "Place: $placeName", fontSize = 18.sp, color = Color.Yellow)
+        Spacer(modifier = Modifier.height(10.dp))
+        Text(text = "Address: $address", fontSize = 15.sp, color = Color.Yellow)
+        Spacer(modifier = Modifier.height(10.dp))
+        Text(text = "Distance: ${currentDistance.roundToInt()} m", fontSize = 15.sp, color = Color.Yellow)
+        Spacer(modifier = Modifier.weight(1f))
+
         // Radar
         Radar(
             modifier = Modifier
@@ -175,7 +180,7 @@ fun GameScreen(navController: NavController, placeName: String?, lat: Double?, l
                 }
                 if (timeLeft == 0 && !gameEnded) {
                     gameEnded = true
-                    Toast.makeText(context, "Defeat!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Game Over!", Toast.LENGTH_SHORT).show()
                     navController.popBackStack()
                 }
             }
@@ -183,14 +188,14 @@ fun GameScreen(navController: NavController, placeName: String?, lat: Double?, l
             Text(
                 text= "Time left: ${timeLeft / 60}:${(timeLeft % 60).toString().padStart(2, '0')}",
                 color = Color.White,
-                fontSize = 16.sp
+                fontSize = 18.sp
             )
 
             // Back Button at the bottom right
             Button(
                 onClick = {
                     gameEnded = true
-                    Toast.makeText(context, "Defeat!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Game Over!", Toast.LENGTH_SHORT).show()
                     navController.popBackStack()
                 },
                 colors = ButtonDefaults.buttonColors(
@@ -213,10 +218,6 @@ fun Radar(
     targetLng: Double,
     currentDistance: Float
 ) {
-
-    //Log.d("targetLat outside update", "$targetLat")
-    //Log.d("targetLong outside update", "$targetLng")
-
     var sweepAngle by remember { mutableFloatStateOf(0f) }
     val context = LocalContext.current
     var azimuth by remember { mutableFloatStateOf(0f) }
@@ -227,9 +228,11 @@ fun Radar(
     var calibrationOffsets by remember { mutableStateOf(FloatArray(3) { 0f }) }
     var isCalibrated by remember { mutableStateOf(false) }
     var calibrationMessage by remember { mutableStateOf("") }
+    // New state for manual calibration trigger
+    var triggerCalibration by remember { mutableStateOf(false) }
 
     // Sensor setup
-    val sensorManager = context.getSystemService(android.content.Context.SENSOR_SERVICE) as SensorManager
+    val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
     val accelerometerSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
     val magnetometerSensor = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
 
@@ -270,22 +273,22 @@ fun Radar(
             ) {
                 SensorManager.getOrientation(rotationMatrix, orientationAngles)
                 azimuth = Math.toDegrees(orientationAngles[0].toDouble()).toFloat()
-
             }
         }
 
         override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {}
     }
+
     //targetAngle is now a state variable
     var targetAngle by remember { mutableFloatStateOf(0f) }
     var previousSweepAngle by remember { mutableFloatStateOf(0f) }
 
     fun updateTargetAngle() {
-        //Log.d("targetLat inside update", "$targetLat")
-        //Log.d("targetLong inside update", "$targetLng")
         val bearing = calculateBearing(myLat, myLng, targetLat, targetLng)
         // Calculate the relative target angle based on the initial azimuth
-        targetAngle = (bearing - azimuth + 360) % 360
+        val relativeAngle = (bearing - azimuth + 360) % 360
+        // Transform the relative angle to the canvas coordinate system
+        targetAngle = relativeAngle
         //Log.d("TargetAngle", "$targetAngle")
     }
 
@@ -293,7 +296,7 @@ fun Radar(
     LaunchedEffect(Unit) {
         while (true) {
             previousSweepAngle = sweepAngle
-            sweepAngle = (sweepAngle + 1f) % 360f // Increased speed
+            sweepAngle = (sweepAngle + 1.5f) % 360f // Increased speed
             // Detect sweep completion
             if (previousSweepAngle > sweepAngle && previousSweepAngle > 180f) {
                 updateTargetAngle()
@@ -301,7 +304,6 @@ fun Radar(
             delay(10L) // Reduced delay
         }
     }
-
     LaunchedEffect(myLat, myLng, targetLat, targetLng) {
         sensorManager.registerListener(
             sensorEventListener,
@@ -314,26 +316,19 @@ fun Radar(
             SensorManager.SENSOR_DELAY_GAME
         )
     }
-
     DisposableEffect(Unit) {
         onDispose {
             sensorManager.unregisterListener(sensorEventListener)
         }
     }
 
-    // Calibration button
-    Button(onClick = {
-        isCalibrating = true
-        calibrationData.clear()
-        calibrationMessage = "Move the device in a figure-eight motion"
-    }) {
-        Text("Calibrate Compass")
-    }
-
-    // Calibration logic
-    LaunchedEffect(isCalibrating) {
-        if (isCalibrating) {
-            delay(5000) // Collect data for 5 seconds
+    // Manual calibration logic
+    LaunchedEffect(triggerCalibration) {
+        if (triggerCalibration) {
+            isCalibrating = true
+            calibrationData.clear()
+            calibrationMessage = "Calibrating... Move in 8 shape"
+            delay(6000) // Collect data for 6 seconds
             isCalibrating = false
             if (calibrationData.isNotEmpty()) {
                 val (offsets, success) = calculateCalibrationOffsets(calibrationData)
@@ -342,14 +337,18 @@ fun Radar(
                 calibrationMessage = if (success) {
                     "Compass calibrated"
                 } else {
-                    "Calibration failed. Move the device more."
+                    "Calibration failed. Move in 8 shape"
                 }
             }
+            triggerCalibration = false // Reset the trigger
         }
     }
 
+    Button(onClick = { triggerCalibration = true }) {
+        Text(text="Calibrate Compass")
+    }
+    Spacer(modifier = Modifier.height(30.dp))
     RadarCanvas(modifier, targetAngle, currentDistance, sweepAngle)
-
     if (isCalibrating) {
         Text(text = calibrationMessage, color = Color.White)
     } else {
@@ -359,7 +358,12 @@ fun Radar(
 
 
 @Composable
-fun RadarCanvas(modifier: Modifier, targetAngle: Float, currentDistance: Float, sweepAngle: Float) {
+fun RadarCanvas(
+    modifier: Modifier,
+    targetAngle: Float,
+    currentDistance: Float,
+    sweepAngle: Float
+) {
     Canvas(modifier = modifier) {
         val canvasWidth = size.width
         val canvasHeight = size.height
@@ -426,8 +430,8 @@ fun RadarCanvas(modifier: Modifier, targetAngle: Float, currentDistance: Float, 
         // Draw the target point
         val targetRadians = Math.toRadians(targetAngle.toDouble()).toFloat()
         val targetRadius = when {
-            currentDistance > 250 -> radius
-            currentDistance in 100.0..250.0 -> radius * 0.66f
+            currentDistance > 350 -> radius
+            currentDistance in 150.0..350.0 -> radius * 0.66f
             else -> radius * 0.33f
         }
         val targetX = centerX + targetRadius * cos(targetRadians)
@@ -450,7 +454,6 @@ fun calculateBearing(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Fl
     return Math.toDegrees(atan2(y, x)).toFloat()
 }
 
-
 fun calculateCalibrationOffsets(calibrationData: List<FloatArray>): Pair<FloatArray, Boolean> {
     val xValues = calibrationData.map { it[0] }
     val yValues = calibrationData.map { it[1] }
@@ -468,7 +471,6 @@ fun calculateCalibrationOffsets(calibrationData: List<FloatArray>): Pair<FloatAr
     val zRange = zMax - zMin
 
     val threshold = 10f // Adjust this value as needed
-
     return if (xRange > threshold && yRange > threshold && zRange > threshold) {
         val xOffset = (xMin + xMax) / 2f
         val yOffset = (yMin + yMax) / 2f

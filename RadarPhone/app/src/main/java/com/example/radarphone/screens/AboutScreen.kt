@@ -19,8 +19,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -70,31 +73,20 @@ fun AboutScreen(navController: NavController) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
-        // Title
-        Text(
-            text = "About the Game",
-            color = Color.White,
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(spacing))
-
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top
-        ) {
             // Brief Description
             Text(
-                text = "RadarPhone is an engaging radar game that uses your phone's GPS to guide you to a hidden location. Follow the radar, explore, and uncover the target!",
+                modifier= Modifier.padding(0.dp, screenPadding, 0.dp, 0.dp),
+                text = "RadarPhone is an engaging radar game that uses your phone's GPS to guide you to a hidden location. \n",
                 color = Color.White,
                 fontSize = fontSize,
                 textAlign = TextAlign.Left
             )
             Spacer(modifier = Modifier.height(20.dp))
             Text(
-                text = "IMPORTANT: To make the game start, enable location permission for the app in your system settings!!!",
+                text = buildAnnotatedString {
+                    withStyle(style = SpanStyle(color = Color.Yellow)) {append("IMPORTANT:")}
+                    append("To make the game start, enable location permission for the app in your system settings!!!")
+                                            },
                 color = Color.White,
                 fontSize = fontSize,
                 textAlign = TextAlign.Left
@@ -122,14 +114,14 @@ fun AboutScreen(navController: NavController) {
             )
             Spacer(modifier = Modifier.height(10.dp))
             Text(
-                text = "3. Move physically to align yourself with the radar's directions. For a better precision, keep the phone in horizontal positioning.",
+                text = "3. Move physically to align yourself with the radar's directions. For a better precision, keep the phone in vertical positioning.",
                 color = Color.White,
                 fontSize = fontSize,
                 textAlign = TextAlign.Left
             )
             Spacer(modifier = Modifier.height(10.dp))
             Text(
-                text = "4. Reach the destination to win!",
+                text = "4. Reach the destination to uncover and win!",
                 color = Color.White,
                 fontSize = fontSize,
                 textAlign = TextAlign.Left
@@ -153,6 +145,5 @@ fun AboutScreen(navController: NavController) {
                     fontSize = fontSize
                 )
             }
-        }
     }
 }

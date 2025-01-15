@@ -28,17 +28,19 @@ fun NavGraph(regLogViewModel: RegLogViewModel, audioViewModel: AudioViewModel) {
         composable("Settings_screen") { SettingsScreen(navController, audioViewModel) }
         composable("About_screen") { AboutScreen(navController)}
         composable(
-            "Game_screen/{placeName}/{lat}/{lng}",
+            "Game_screen/{placeName}/{lat}/{lng}/{address}",
             arguments = listOf(
                 navArgument("placeName") { type = NavType.StringType },
                 navArgument("lat") { type = NavType.FloatType },
-                navArgument("lng") { type = NavType.FloatType }
+                navArgument("lng") { type = NavType.FloatType },
+                navArgument("address") { type = NavType.StringType }
             )
         ) { backStackEntry ->
             val placeName = backStackEntry.arguments?.getString("placeName")
             val lat = backStackEntry.arguments?.getFloat("lat")?.toDouble()
             val lng = backStackEntry.arguments?.getFloat("lng")?.toDouble()
-            GameScreen(navController, placeName, lat, lng)
+            val address = backStackEntry.arguments?.getString("address")
+            GameScreen(navController, placeName, lat, lng, address)
         }
     }
 }

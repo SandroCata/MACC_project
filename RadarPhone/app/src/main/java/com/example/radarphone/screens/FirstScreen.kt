@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -23,10 +24,13 @@ import com.example.radarphone.R
 @Composable
 fun FirstScreen(navController: NavController) {
 
+    val myCustomFontFamily = androidx.compose.ui.text.font.FontFamily(
+        Font(R.font.atmo, FontWeight.Normal))
+
     //box encapsulating all
     Box(modifier = Modifier
-        .fillMaxSize()
-        .background(Color.Transparent) // Ensure background is transparent for image
+            .fillMaxSize()
+            .background(Color.Transparent) // Ensure background is transparent for image
         .clickable { navController.navigate("RegLog_screen") }) {
 
         //background image
@@ -43,9 +47,9 @@ fun FirstScreen(navController: NavController) {
                 text = "RadarPhone", // Your title
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(top = 50.dp), // Add padding as needed
-                fontSize = 60.sp,
-                fontFamily = FontFamily.SansSerif,
+                    .padding(top = 90.dp), // Add padding as needed
+                fontSize = 45.sp,
+                fontFamily = myCustomFontFamily,
                 fontWeight = FontWeight.Bold,
                 color = Color.White //
             )

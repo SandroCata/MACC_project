@@ -62,6 +62,8 @@ import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.launch
 import android.Manifest
 import android.util.Log
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.text.font.Font
 import com.example.radarphone.server.Place
 import retrofit2.Call
 import retrofit2.Callback
@@ -69,70 +71,119 @@ import retrofit2.Response
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(navController: NavController, regLogViewModel: RegLogViewModel, audioViewModel: AudioViewModel) {
+fun HomeScreen(
+    navController: NavController,
+    regLogViewModel: RegLogViewModel,
+    audioViewModel: AudioViewModel
+) {
 
     val configuration = LocalConfiguration.current
-
     val context = LocalContext.current
-
     val changeSize = (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE)
 
-    val buttonWidthSize = if (changeSize) {
-        200.dp
-    } else {
-        300.dp
-    }
-
-    val iconWidthSize = if (changeSize) {
-        80.dp
-    } else {
-        100.dp
-    }
-
-    val fontSize = if (changeSize) {
-        14.sp
-    } else {
-        16.sp
-    }
-
-    val spacing = if (changeSize) {
-        10.dp
-    } else {
-        80.dp
-    }
-
-    val screenPadding = if (changeSize) {
-        16.dp
-    } else {
-        80.dp
-    }
+    val buttonWidthSize = if (changeSize) 200.dp else 300.dp
+    val iconWidthSize = if (changeSize) 80.dp else 100.dp
+    val fontSize = if (changeSize) 14.sp else 16.sp
+    val spacing = if (changeSize) 10.dp else 55.dp
+    val screenPadding = if (changeSize) 16.dp else 80.dp
 
     val user = FirebaseAuth.getInstance().currentUser
     val databaseRef = FirebaseDatabase.getInstance().reference
     var username by remember { mutableStateOf("") }
     var song: String? = null
-    val fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(LocalContext.current)
+    val fusedLocationProviderClient =
+        LocationServices.getFusedLocationProviderClient(LocalContext.current)
 
-    // Remember a CoroutineScope
     val coroutineScope = rememberCoroutineScope()
 
-    // Scrollable select button
+    // Dropdown menu
     var expanded by remember { mutableStateOf(false) }
-    val options = listOf("","Restaurant", "Supermarket", "Fuel", "Park")
+    val options = listOf("", "Restaurant", "Supermarket", "Fuel", "Cafe")
     var selectedOptionText by remember { mutableStateOf(options[0]) }
-    var isGameStarting by remember { mutableStateOf(false) } // New state variable
+
+    // Game state
+    var isGameStarting by remember { mutableStateOf(false) }
+    var canRetry by remember { mutableStateOf(false) } // New state variable
+
+    val myCustomFontFamily = androidx.compose.ui.text.font.FontFamily(
+        Font(R.font.mandalore, FontWeight.Normal))
 
     LaunchedEffect(user) {
         if (user != null) {
-            // ... (existing code to fetch profile picture) ...
-
-            // Fetch username from Firebase
-            databaseRef
-                .child("users/${user.uid}/username")
-                .get()
+            databaseRef.child("users/${user.uid}/username").get()
                 .addOnSuccessListener { snapshot ->
                     username = snapshot.getValue(String::class.java) ?: ""
                 }
+        }
+    }
+
+    // Function to handle the API call and navigation
+    fun startGame() {
+        if (ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            fusedLocationProviderClient.lastLocation.addOnSuccessListener { location ->
+                if (location != null) {
+                    val apiService = RetrofitClient.instance.create(ApiService::class.java)
+                    val request = LocationRequest(
+                        lat = location.latitude,
+                        lon = location.longitude,
+                        typ = selectedOptionText.lowercase()
+                    )
+                    apiService.searchPlace(request).enqueue(object : Callback<Place> {
+                        override fun onResponse(call: Call<Place>, response: Response<Place>) {
+                            if (response.isSuccessful) {
+                                val place = response.body()
+                                if (place != null) {
+                                    navController.navigate("Game_screen/${place.name}/${place.findlocation[0]}/${place.findlocation[1]}/${place.address}")
+                                    canRetry = false
+                                } else {
+                                    Toast.makeText(
+                                        context,
+                                        "No nearby $selectedOptionText  was found",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    canRetry = true
+                                }
+                            } else {
+                                Log.d(
+                                    "Response unsuccessful",
+                                    "${response.errorBody()?.string()}"
+                                )
+                                Toast.makeText(
+                                    context,
+                                    "Error: ${response.errorBody()?.string()}",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                canRetry = true
+                            }
+                            isGameStarting = false
+                        }
+
+                        override fun onFailure(call: Call<Place>, t: Throwable) {
+                            Log.e("Start game", "Error in request: ${t.message}", t)
+                            Toast.makeText(
+                                context,
+                                "Error in request: ${t.message}",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            canRetry = true
+                            isGameStarting = false
+                        }
+                    })
+                } else {
+                    Toast.makeText(context, "Failed to get location", Toast.LENGTH_SHORT).show()
+                    isGameStarting = false
+                    canRetry = true
+                }
+            }
+        } else {
+            Toast.makeText(context, "Activate location permission for the app", Toast.LENGTH_SHORT)
+                .show()
+            isGameStarting = false
+            canRetry = true
         }
     }
 
@@ -141,31 +192,31 @@ fun HomeScreen(navController: NavController, regLogViewModel: RegLogViewModel, a
         painter = painterResource(id = R.drawable.mainscreen),
         contentDescription = "Background Image",
         modifier = Modifier.fillMaxSize(),
-        contentScale = ContentScale.Crop // Adjust scaling as needed
+        contentScale = ContentScale.Crop
     )
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(screenPadding),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Top
     ) {
         Text(
+            modifier = Modifier.padding(0.dp, 0.dp, 0.dp, screenPadding),
             text = buildAnnotatedString {
-                append("Welcome, ")
-                withStyle(style = SpanStyle(color = Color.Red)) {
+                append("Hi,")
+                withStyle(style = SpanStyle(color = Color.Yellow, fontFamily = myCustomFontFamily, fontSize = 26.sp)) {
                     append(username)
                 }
                 append("!")
-                append("\nTime to play ;)")
+                append("\n Time to play ;)")
             },
             color = Color.White,
             fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.Medium,
             fontSize = 22.sp
         )
-        Spacer(modifier = Modifier.height(spacing-5.dp))
-
         ExposedDropdownMenuBox(
             expanded = expanded,
             onExpandedChange = { expanded = !expanded },
@@ -175,7 +226,7 @@ fun HomeScreen(navController: NavController, regLogViewModel: RegLogViewModel, a
                 readOnly = true,
                 value = selectedOptionText,
                 onValueChange = { },
-                label = { Text("Choose a location to find") },
+                label = { Text("Choose a location to find")},
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                 colors = ExposedDropdownMenuDefaults.textFieldColors(),
                 modifier = Modifier.menuAnchor()
@@ -195,77 +246,15 @@ fun HomeScreen(navController: NavController, regLogViewModel: RegLogViewModel, a
                 }
             }
         }
-        Spacer(modifier = Modifier.height(spacing-15.dp))
+        Spacer(modifier = Modifier.height(spacing - 15.dp))
         // Start the game button
         Button(
             onClick = {
                 if (!isGameStarting) {
                     if (selectedOptionText.isNotEmpty() && selectedOptionText != options[0]) {
-                        // Start the game logic
-                        isGameStarting = true // Set the flag to true
-                        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                            Log.d("Location", "Permission granted")
-                            fusedLocationProviderClient.lastLocation.addOnSuccessListener { location ->
-                                if (location != null) {
-                                    // Create service instance
-                                    val apiService =
-                                        RetrofitClient.instance.create(ApiService::class.java)
-
-                                    // Make the request to the API
-                                    val request = LocationRequest(
-                                        lat = location.latitude,
-                                        lon = location.longitude,
-                                        typ = selectedOptionText.lowercase()
-                                    )
-                                    Log.d("My request Location", "Location: ${location.latitude}, ${location.longitude}")
-                                    apiService.searchPlace(request).enqueue(object : Callback<Place> {
-                                        override fun onResponse(
-                                            call: Call<Place>,
-                                            response: Response<Place>
-                                        ) {
-                                            if (response.isSuccessful) {
-                                                val place = response.body()
-                                                if (place != null) {
-                                                    // Navigate to GameScreen with location data
-                                                    navController.navigate("Game_screen/${place.name}/${place.findlocation[0]}/${place.findlocation[1]}")
-                                                } else {
-                                                    Toast.makeText(
-                                                        context,
-                                                        "No $selectedOptionText nearby was found",
-                                                        Toast.LENGTH_SHORT
-                                                    ).show()
-                                                }
-                                            } else {
-                                                Log.d("Response unsuccessful", "${response.errorBody()?.string()}")
-                                                Toast.makeText(
-                                                    context,
-                                                    "Error: ${response.errorBody()?.string()}",
-                                                    Toast.LENGTH_SHORT
-                                                ).show()
-                                            }
-                                        }
-
-                                        override fun onFailure(call: Call<Place>, t: Throwable) {
-                                            Log.e("Start game", "Error in request: ${t.message}", t)
-                                            Toast.makeText(
-                                                context,
-                                                "Error in request: ${t.message}",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                        }
-                                    })
-                                } else {
-                                    Toast.makeText(
-                                        context,
-                                        "Failed to get location",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
-                            }
-                        } else {
-                            Toast.makeText(context, "Activate location permission for the app", Toast.LENGTH_SHORT)
-                                .show()
-                        }
+                        isGameStarting = true
+                        canRetry = false
+                        startGame()
                     } else {
                         Toast.makeText(
                             context,
@@ -273,22 +262,26 @@ fun HomeScreen(navController: NavController, regLogViewModel: RegLogViewModel, a
                             Toast.LENGTH_SHORT
                         ).show()
                     }
+                } else if (canRetry) {
+                    isGameStarting = true
+                    canRetry = false
+                    startGame()
                 }
             },
             modifier = Modifier
                 .wrapContentSize()
                 .widthIn(max = buttonWidthSize),
             colors = ButtonDefaults.buttonColors(
-                containerColor = if (selectedOptionText.isNotEmpty() && selectedOptionText != options[0]) Color.Magenta else Color.LightGray, // Change color based on selection
-                contentColor = if (selectedOptionText.isNotEmpty() && selectedOptionText != options[0]) Color.White else Color.DarkGray // Change content color based on selection
+                containerColor = if (selectedOptionText.isNotEmpty() && selectedOptionText != options[0]) Color.Magenta else Color.LightGray,
+                contentColor = if (selectedOptionText.isNotEmpty() && selectedOptionText != options[0]) Color.White else Color.DarkGray
             )
         ) {
-            Text(text = "Start the game", fontSize = fontSize)
+            Text(text = if (canRetry) "Retry" else "Start the game", fontSize = fontSize)
         }
-        Spacer(modifier = Modifier.height(spacing-15.dp))
+        Spacer(modifier = Modifier.height(spacing - 15.dp))
         // About the game button
         Button(
-            onClick = { /* Navigate to About screen */
+            onClick = {
                 navController.navigate("About_screen")
             },
             modifier = Modifier
@@ -301,61 +294,57 @@ fun HomeScreen(navController: NavController, regLogViewModel: RegLogViewModel, a
         ) {
             Text(text = "About the game", fontSize = fontSize)
         }
-        Spacer(modifier = Modifier.height(spacing-15.dp))
+        Spacer(modifier = Modifier.height(spacing - 15.dp))
         Row(
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
-                .padding(5.dp), // Add padding around the row
-            horizontalArrangement = Arrangement.SpaceBetween, // Space elements evenly
-            verticalAlignment = Alignment.Bottom // Align to the bottom
+                .padding(5.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Bottom
         ) {
             // Music icon button
             IconButton(
-                onClick = { /* Play next song logic */
+                onClick = {
                     song = audioViewModel.playNextSong(context)
-                    Toast.makeText(context, "Now playing: $song", Toast.LENGTH_SHORT).show()},
+                    Toast.makeText(context, "Now playing: $song", Toast.LENGTH_SHORT).show()
+                },
                 modifier = Modifier.size(width = iconWidthSize - 20.dp, height = 38.dp)
             ) {
                 Icon(
                     modifier = Modifier.size(width = iconWidthSize, height = 38.dp),
-                    imageVector = Icons.Filled.PlayArrow, // Use music note icon
+                    imageVector = Icons.Filled.PlayArrow,
                     contentDescription = "Next Song",
                     tint = Color.White
                 )
             }
             IconButton(
-                onClick = { navController.navigate("Settings_screen") }, // Navigate to Settings screen
-                modifier = Modifier.size(width=iconWidthSize-20.dp, height = 38.dp) //to make the right area clickable adjust the width size
+                onClick = { navController.navigate("Settings_screen") },
+                modifier = Modifier.size(width = iconWidthSize - 20.dp, height = 38.dp)
             ) {
                 Icon(
-                    modifier = Modifier.size(width=iconWidthSize, height = 38.dp),
+                    modifier = Modifier.size(width = iconWidthSize, height = 38.dp),
                     imageVector = Icons.Filled.Settings,
                     contentDescription = "Settings",
-                    tint = Color.White // Set icon color to white
+                    tint = Color.White
                 )
             }
         }
-        if(!changeSize)
+        if (!changeSize)
             Spacer(modifier = Modifier.height(spacing))
         Button(
             modifier = Modifier
                 .height(38.dp)
-                .wrapContentSize() // Allow button to wrap its content
-                .widthIn(max = buttonWidthSize),// Limit maximum width,
-            onClick = { /* Handle signout (both if authenticated through google or through form) and navigate to RegLog_screen */
+                .wrapContentSize()
+                .widthIn(max = buttonWidthSize),
+            onClick = {
                 coroutineScope.launch {
                     val signOutResult = regLogViewModel.signout()
                     if (signOutResult.first) {
-                        // Sign-out successful
                         Toast.makeText(context, signOutResult.second, Toast.LENGTH_SHORT).show()
                         navController.navigate("RegLog_screen") {
-                            // Clear back stack (Removes all destinations from the back stack up to and including the RegLog_screen.
-                            // As a result, the back stack is now empty, and the RegLog_screen is the only destination in the navigation history.
-                            // This ensures that the user cannot accidentally go back to the HomeScreen after signing out.)
                             popUpTo("RegLog_screen") { inclusive = true }
                         }
                     } else {
-                        // Sign-out failed
                         Toast.makeText(context, signOutResult.second, Toast.LENGTH_SHORT).show()
                     }
                 }
