@@ -75,7 +75,7 @@ fun GameScreen(navController: NavController, placeName: String?, lat: Double?, l
 
     // Location updates
     val locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000L)
-        .setMinUpdateDistanceMeters(5f) // Update only if moved at least 5 meter
+        .setMinUpdateDistanceMeters(1f) // Update only if moved at least 5 meter
         .build()
     val locationCallback = object : LocationCallback() {
         override fun onLocationResult(locationResult: LocationResult) {
@@ -442,8 +442,8 @@ fun RadarCanvas(
         // Draw the target point
         val targetRadians = Math.toRadians(targetAngle.toDouble()).toFloat()
         val targetRadius = when {
-            currentDistance > 350 -> radius
-            currentDistance in 150.0..350.0 -> radius * 0.66f
+            currentDistance > 250 -> radius
+            currentDistance in 120.0..250.0 -> radius * 0.66f
             else -> radius * 0.33f
         }
         val targetX = centerX + targetRadius * cos(targetRadians)
