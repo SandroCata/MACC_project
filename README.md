@@ -14,4 +14,4 @@ RadarPhone
 - Pythonanywhere for API of location ("https://juditbs.pythonanywhere.com/" and "https://overpass-api.de/").
 - Music in background and possibility to change song.
   
-![](./pics/example2.png)
+![](./pics/demo.png)
