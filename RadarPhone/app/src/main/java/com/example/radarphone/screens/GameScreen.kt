@@ -75,12 +75,11 @@ fun GameScreen(navController: NavController, placeName: String?, lat: Double?, l
 
     // Location updates
     val locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000L)
-        .setMinUpdateDistanceMeters(1f) // Update only if moved at least 1 meter
+        .setMinUpdateDistanceMeters(5f) // Update only if moved at least 5 meter
         .build()
     val locationCallback = object : LocationCallback() {
         override fun onLocationResult(locationResult: LocationResult) {
-            locationResult.lastLocation?.let { location ->
-                myLat = location.latitude
+            locationResult.lastLocation?.let { location ->myLat = location.latitude
                 myLng = location.longitude
                 val results = FloatArray(1)
                 Location.distanceBetween(
@@ -92,7 +91,7 @@ fun GameScreen(navController: NavController, placeName: String?, lat: Double?, l
                 )
                 currentDistance = results[0]
                 Log.d("Distance", "Distance: $currentDistance")
-                if (currentDistance <= 2) {
+                if (currentDistance <= 8) {
                     gameEnded = true
                     Toast.makeText(
                         context,
@@ -105,6 +104,7 @@ fun GameScreen(navController: NavController, placeName: String?, lat: Double?, l
         }
     }
 
+    // Request location updates only if permission is granted
     LaunchedEffect(Unit) {
         if (ContextCompat.checkSelfPermission(
                 context,
@@ -173,7 +173,7 @@ fun GameScreen(navController: NavController, placeName: String?, lat: Double?, l
             verticalAlignment = Alignment.CenterVertically
         ) {
 
-            LaunchedEffect(Unit) {
+            LaunchedEffect(gameEnded) {
                 while (timeLeft > 0 && isActive && !gameEnded) {
                     delay(1000L) // Delay for 1 second
                     timeLeft--
@@ -299,12 +299,13 @@ fun Radar(
             sweepAngle = (sweepAngle + 1.5f) % 360f // Increased speed
             // Detect sweep completion
             if (previousSweepAngle > sweepAngle && previousSweepAngle > 180f) {
-                updateTargetAngle()
+                //updateTargetAngle()
             }
             delay(10L) // Reduced delay
         }
     }
-    LaunchedEffect(myLat, myLng, targetLat, targetLng) {
+    // Register sensor listeners only once
+    LaunchedEffect(Unit) {
         sensorManager.registerListener(
             sensorEventListener,
             accelerometerSensor,
@@ -316,10 +317,15 @@ fun Radar(
             SensorManager.SENSOR_DELAY_GAME
         )
     }
+    // Unregister sensor listeners when the composable is disposed
     DisposableEffect(Unit) {
         onDispose {
             sensorManager.unregisterListener(sensorEventListener)
         }
+    }
+    // Update target angle when location or target changes
+    LaunchedEffect(myLat, myLng, targetLat, targetLng) {
+        updateTargetAngle()
     }
 
     // Manual calibration logic
@@ -341,6 +347,12 @@ fun Radar(
                 }
             }
             triggerCalibration = false // Reset the trigger
+        }
+    }
+    // Stop calibration when the composable is disposed
+    DisposableEffect(Unit) {
+        onDispose {
+            isCalibrating = false
         }
     }
 
