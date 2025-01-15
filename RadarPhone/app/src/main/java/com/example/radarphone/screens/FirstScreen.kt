@@ -48,7 +48,7 @@ fun FirstScreen(navController: NavController) {
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .padding(top = 90.dp), // Add padding as needed
-                fontSize = 45.sp,
+                fontSize = 35.sp,
                 fontFamily = myCustomFontFamily,
                 fontWeight = FontWeight.Bold,
                 color = Color.White //
