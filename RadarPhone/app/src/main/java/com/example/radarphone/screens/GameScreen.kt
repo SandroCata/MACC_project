@@ -48,6 +48,7 @@ import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
+import kotlin.rem
 
 @Composable
 fun GameScreen(navController: NavController, placeName: String?, lat: Double?, lng: Double?, address: String?) {
@@ -75,7 +76,7 @@ fun GameScreen(navController: NavController, placeName: String?, lat: Double?, l
 
     // Location updates
     val locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000L)
-        .setMinUpdateDistanceMeters(1f) // Update only if moved at least 5 meter
+        .setMinUpdateDistanceMeters(2f) // Update only if moved at least 2 meter
         .build()
     val locationCallback = object : LocationCallback() {
         override fun onLocationResult(locationResult: LocationResult) {
@@ -90,7 +91,9 @@ fun GameScreen(navController: NavController, placeName: String?, lat: Double?, l
                     results
                 )
                 currentDistance = results[0]
-                Log.d("Distance", "Distance: $currentDistance")
+                //Log.d("Distance", "Distance: $currentDistance")
+                //Log.d("MyLat", "MyLat: $myLat")
+               //Log.d("MyLng", "MyLng: $myLng")
                 if (currentDistance <= 8) {
                     gameEnded = true
                     Toast.makeText(
@@ -273,6 +276,7 @@ fun Radar(
             ) {
                 SensorManager.getOrientation(rotationMatrix, orientationAngles)
                 azimuth = Math.toDegrees(orientationAngles[0].toDouble()).toFloat()
+                //Log.d("Azimuth", "Azimuth: $azimuth")
             }
         }
 
@@ -286,9 +290,12 @@ fun Radar(
     fun updateTargetAngle() {
         val bearing = calculateBearing(myLat, myLng, targetLat, targetLng)
         // Calculate the relative target angle based on the initial azimuth
-        val relativeAngle = (bearing - azimuth + 360) % 360
+        val relativeTargetAngle = (bearing - azimuth + 360) % 360
+
         // Transform the relative angle to the canvas coordinate system
-        targetAngle = relativeAngle
+        targetAngle = relativeTargetAngle
+
+        // Transform the relative angle to the canvas coordinate system
         //Log.d("TargetAngle", "$targetAngle")
     }
 
@@ -296,14 +303,15 @@ fun Radar(
     LaunchedEffect(Unit) {
         while (true) {
             previousSweepAngle = sweepAngle
-            sweepAngle = (sweepAngle + 1.5f) % 360f // Increased speed
+            sweepAngle = (sweepAngle + 1.8f) % 360f // Increased speed
             // Detect sweep completion
             if (previousSweepAngle > sweepAngle && previousSweepAngle > 180f) {
-                //updateTargetAngle()
+                updateTargetAngle()
             }
-            delay(10L) // Reduced delay
+            delay(5L) // Reduced delay
         }
     }
+
     // Register sensor listeners only once
     LaunchedEffect(Unit) {
         sensorManager.registerListener(
@@ -322,10 +330,6 @@ fun Radar(
         onDispose {
             sensorManager.unregisterListener(sensorEventListener)
         }
-    }
-    // Update target angle when location or target changes
-    LaunchedEffect(myLat, myLng, targetLat, targetLng) {
-        updateTargetAngle()
     }
 
     // Manual calibration logic
@@ -440,12 +444,14 @@ fun RadarCanvas(
         )
 
         // Draw the target point
+        //Log.d("TargetAngle", "$targetAngle")
         val targetRadians = Math.toRadians(targetAngle.toDouble()).toFloat()
         val targetRadius = when {
             currentDistance > 250 -> radius
             currentDistance in 120.0..250.0 -> radius * 0.66f
             else -> radius * 0.33f
         }
+        //Log.d("TargetRadians", "$targetRadians")
         val targetX = centerX + targetRadius * cos(targetRadians)
         val targetY = centerY + targetRadius * sin(targetRadians)
 

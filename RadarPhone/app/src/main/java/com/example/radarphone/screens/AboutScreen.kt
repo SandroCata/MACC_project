@@ -73,6 +73,15 @@ fun AboutScreen(navController: NavController) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
+        Text(
+            text = buildAnnotatedString {
+                withStyle(style = SpanStyle(color = Color.Yellow)) {append("Authors:")}
+                append("A. Catalano, J. Buj Soler")
+            },
+            color = Color.White,
+            fontSize = fontSize,
+            textAlign = TextAlign.Left
+        )
             // Brief Description
             Text(
                 modifier= Modifier.padding(0.dp, screenPadding, 0.dp, 0.dp),
